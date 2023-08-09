@@ -160,6 +160,11 @@ cython_debug/
 #.idea/
 
 # Project-specific ignorelist:
-/data
-/docuumentation
+data/
+docuumentation/
 test_notebook.ipynb
+
+
+
+
+
