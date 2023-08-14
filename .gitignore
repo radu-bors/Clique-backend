@@ -163,7 +163,8 @@ cython_debug/
 data/
 documentation/
 test_notebook.ipynb
-
+localhost.key
+localhost.crt
 
 
 
