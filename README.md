@@ -1,2 +1,2 @@
-# VibeCliq
-VibeCliq Social App
+# LetsClique
+LetsClique Social App
