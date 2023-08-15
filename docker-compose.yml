@@ -47,7 +47,7 @@ services:
   ################################################################################
   # fire up the FastAPI application container 
   ################################################################################
-  api:
+  fastapi:
     # Build the image using the local Dockerfile
     build:
       # Set the build context to the current directory
