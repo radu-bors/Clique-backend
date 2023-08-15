@@ -44,28 +44,28 @@ services:
     networks:
       - app_network
 
-################################################################################
-# fire up the FastAPI application container 
-################################################################################
-api:
-  # Build the image using the local Dockerfile
-  build:
-    # Set the build context to the current directory
-    context: .
-    # Specify the Dockerfile to use for building the image
-    dockerfile: Dockerfile
-  # Custom container name for easier reference
-  container_name: api_container
-  # Map port 80 on the host to port 8000 inside the container
-  ports:
-    - "80:8000"
-  # Ensure the FastAPI application starts after the databases
-  depends_on:
-    - app_db
-    - auth_db
-  # Add the FastAPI application to the custom app_network
-  networks:
-    - app_network
+  ################################################################################
+  # fire up the FastAPI application container 
+  ################################################################################
+  api:
+    # Build the image using the local Dockerfile
+    build:
+      # Set the build context to the current directory
+      context: .
+      # Specify the Dockerfile to use for building the image
+      dockerfile: Dockerfile
+    # Custom container name for easier reference
+    container_name: api_container
+    # Map port 80 on the host to port 8000 inside the container
+    ports:
+      - "80:8000"
+    # Ensure the FastAPI application starts after the databases
+    depends_on:
+      - app_db
+      - auth_db
+    # Add the FastAPI application to the custom app_network
+    networks:
+      - app_network
 
 
 # custom network
