@@ -44,10 +44,10 @@ services:
     networks:
       - app_network
 
-  ################################################################################
-  # fire up the FastAPI application container 
-  ################################################################################
-  api:
+################################################################################
+# fire up the FastAPI application container 
+################################################################################
+api:
   # Build the image using the local Dockerfile
   build:
     # Set the build context to the current directory
