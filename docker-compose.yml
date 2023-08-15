@@ -56,9 +56,9 @@ services:
       dockerfile: api_dockerfile
     # Custom container name for easier reference
     container_name: api_container
-    # Map port 80 on the host to port 8000 inside the container
+    # Map port 8080 on the host to port 8000 inside the container
     ports:
-      - "80:8000"
+      - "8080:8000"
     # Ensure the FastAPI application starts after the databases
     depends_on:
       - app_db
