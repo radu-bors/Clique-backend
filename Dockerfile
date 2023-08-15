@@ -18,4 +18,4 @@ COPY localhost.crt /app
 COPY localhost.key /app
 
 # Run uvicorn with SSL when the container launches
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--ssl-keyfile", "/app/localhost.key", "--ssl-certfile", "/app/localhost.crt"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
