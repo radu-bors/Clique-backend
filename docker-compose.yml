@@ -39,7 +39,7 @@ services:
       POSTGRES_PASSWORD: password
     # set volume for data persistence
     volumes:
-      - ./auth_db_data_auth:/var/lib/postgresql/data
+      - ./auth_db_data:/var/lib/postgresql/data
     # add this service to the custom network app_network
     networks:
       - app_network
@@ -66,6 +66,9 @@ services:
     # Add the FastAPI application to the custom app_network
     networks:
       - app_network
+    # Mount the project directory into the container
+    volumes:
+      - ./app:/app  # Mount the project directory into the container
 
 
 # custom network
