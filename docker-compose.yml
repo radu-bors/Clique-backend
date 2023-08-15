@@ -19,7 +19,7 @@ services:
       POSTGRES_PASSWORD: password
     # set volume for data persistence
     volumes:
-      - ./data:/var/lib/postgresql/data
+      - ./app_db_data:/var/lib/postgresql/data
     # add this service to the custom network app_network
     networks:
       - app_network
@@ -39,7 +39,7 @@ services:
       POSTGRES_PASSWORD: password
     # set volume for data persistence
     volumes:
-      - ./data_auth:/var/lib/postgresql/data
+      - ./auth_db_data_auth:/var/lib/postgresql/data
     # add this service to the custom network app_network
     networks:
       - app_network
