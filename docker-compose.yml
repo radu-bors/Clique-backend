@@ -53,7 +53,7 @@ services:
       # Set the build context to the current directory
       context: .
       # Specify the Dockerfile to use for building the image
-      dockerfile: Dockerfile
+      dockerfile: api_dockerfile
     # Custom container name for easier reference
     container_name: api_container
     # Map port 80 on the host to port 8000 inside the container
