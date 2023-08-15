@@ -67,8 +67,8 @@ services:
     networks:
       - app_network
     # Mount the project directory into the container
-    volumes:
-      - ./app:/app
+    #volumes:
+    #  - ./app:/app
 
 
 # custom network
