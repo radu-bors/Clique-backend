@@ -65,7 +65,9 @@ services:
       - auth_db
     # Add the FastAPI application to the custom app_network
     networks:
-      - app_network
+      app_network:
+        aliases:
+          - api.local
     # Mount the project directory into the container
     #volumes:
     #  - ./app:/app
@@ -75,6 +77,7 @@ services:
 networks:
   app_network:
     driver: bridge
+    name: letsclique_app_network
 
 
 # volume
