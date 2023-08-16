@@ -19,7 +19,7 @@ services:
       POSTGRES_PASSWORD: password
     # set volume for data persistence
     volumes:
-      - ./app_db_data:/var/lib/postgresql/data
+      - app_db_data:/var/lib/postgresql/data
     # add this service to the custom network app_network
     networks:
       - app_network
@@ -39,7 +39,7 @@ services:
       POSTGRES_PASSWORD: password
     # set volume for data persistence
     volumes:
-      - ./auth_db_data:/var/lib/postgresql/data
+      - auth_db_data:/var/lib/postgresql/data
     # add this service to the custom network app_network
     networks:
       - app_network
@@ -47,7 +47,7 @@ services:
   ################################################################################
   # fire up the FastAPI application container 
   ################################################################################
-  fastapi:
+  letsclique_api:
     # Build the image using the local Dockerfile
     build:
       # Set the build context to the current directory
@@ -80,3 +80,4 @@ networks:
 # volume
 volumes:
   app_db_data:
+  auth_db_data:
