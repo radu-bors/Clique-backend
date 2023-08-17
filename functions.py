@@ -5,6 +5,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
 from typing import Optional, Dict
 
+import uuid
 import hashlib
 import os
 
