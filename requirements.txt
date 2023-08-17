@@ -2,3 +2,4 @@ fastapi
 uvicorn
 databases
 sqlalchemy
+email-validator
