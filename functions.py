@@ -147,9 +147,9 @@ async def insert_user_auth(db: Database, user_id: uuid.UUID, username: str, emai
         Column("salt", String, nullable=False),
         Column("is_active", Boolean, default=True),
         Column("is_superuser", Boolean, default=False),
-        Column("created_at", TIMESTAMP, default=datetime.now),
-        Column("updated_at", TIMESTAMP, default=datetime.now),
-        Column("last_login", TIMESTAMP, default=datetime.now),
+        Column("created_at", TIMESTAMP, default=datetime.now()),
+        Column("updated_at", TIMESTAMP, default=datetime.now()),
+        Column("last_login", TIMESTAMP, default=datetime.now()),
         extend_existing=True
     )
 
