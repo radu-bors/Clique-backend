@@ -2,4 +2,3 @@ fastapi
 uvicorn
 databases
 sqlalchemy
-os
