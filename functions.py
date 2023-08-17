@@ -63,8 +63,7 @@ async def insert_user(db: Database, user_data: Dict):
         Column("gender", String, nullable=False),
         Column("location", Text, nullable=False), # Using Text for simplicity; consider using a specific type for POINT if needed
         Column("profile_photo_url", String),
-        Column("description", String, 
-               check=CheckConstraint("CHAR_LENGTH(description) <= 1000")),
+        Column("description", String),
         Column("last_online", TIMESTAMP),
         Column("is_online", Boolean, default=False),
         Column("social_media_links", JSON)
