@@ -60,8 +60,7 @@ async def insert_user(db: Database, user_data: Dict):
         Column("username", String),
         Column("email", String, unique=True, nullable=False),
         Column("birthdate", Date, nullable=False),
-        Column("gender", String, nullable=False, 
-               check=CheckConstraint("gender IN ('male', 'female', 'other')")),
+        Column("gender", String, nullable=False),
         Column("location", Text, nullable=False), # Using Text for simplicity; consider using a specific type for POINT if needed
         Column("profile_photo_url", String),
         Column("description", String, 
