@@ -9,6 +9,7 @@ import uuid
 import hashlib
 import os
 
+metadata = MetaData()
 
 def verify_URL_token(token: str = ""):
     if token != "AreYouThere?":
