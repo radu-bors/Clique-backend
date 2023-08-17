@@ -2,6 +2,8 @@ from fastapi import FastAPI, Depends, HTTPException, Header
 from databases import Database
 from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Boolean, TIMESTAMP, Text, CheckConstraint, JSON
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.sql import func
+
 from datetime import datetime
 from typing import Optional, Dict
 
@@ -147,9 +149,9 @@ async def insert_user_auth(db: Database, user_id: uuid.UUID, username: str, emai
         Column("salt", String, nullable=False),
         Column("is_active", Boolean, default=True),
         Column("is_superuser", Boolean, default=False),
-        Column("created_at", TIMESTAMP, default=datetime.now()),
-        Column("updated_at", TIMESTAMP, default=datetime.now()),
-        Column("last_login", TIMESTAMP, default=datetime.now()),
+        Column("created_at", TIMESTAMP, default=func.now()),
+        Column("updated_at", TIMESTAMP, default=func.now()),
+        Column("last_login", TIMESTAMP, default=func.now()),
         extend_existing=True
     )
 
