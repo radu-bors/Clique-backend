@@ -3,3 +3,4 @@ uvicorn
 databases
 sqlalchemy
 email-validator
+asyncpg
