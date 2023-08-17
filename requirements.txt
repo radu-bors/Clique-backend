@@ -1,2 +1,7 @@
 fastapi
 uvicorn
+databases
+sqlalchemy
+hashlib
+os
+datetime
