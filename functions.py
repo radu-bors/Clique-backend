@@ -49,6 +49,11 @@ async def insert_user(db: Database, user_data: Dict):
     - The user_id of the inserted user.
     """
     
+    # Convert the birthdate string to a date object
+    birthdate_str = user_data["birthdate"]
+    birthdate_date = datetime.strptime(birthdate_str, "%Y-%m-%d").date()
+    user_data["birthdate"] = birthdate_date
+    
     # define struncture of the users table
     users = Table(
         "users",
