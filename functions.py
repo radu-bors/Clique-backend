@@ -71,7 +71,8 @@ async def insert_user(db: Database, user_data: Dict):
         Column("description", String),
         Column("last_online", TIMESTAMP),
         Column("is_online", Boolean, default=False),
-        Column("social_media_links", JSON)
+        Column("social_media_links", JSON),
+        extend_existing=True
     )
     
     query = users.insert().values(**user_data)
@@ -146,9 +147,10 @@ async def insert_user_auth(db: Database, user_id: uuid.UUID, username: str, emai
         Column("salt", String, nullable=False),
         Column("is_active", Boolean, default=True),
         Column("is_superuser", Boolean, default=False),
-        Column("created_at", TIMESTAMP, default=datetime.now),  # <- fixed here
-        Column("updated_at", TIMESTAMP, default=datetime.now),  # <- fixed here
-        Column("last_login", TIMESTAMP, default=datetime.now)   # <- fixed here
+        Column("created_at", TIMESTAMP, default=datetime.now),
+        Column("updated_at", TIMESTAMP, default=datetime.now),
+        Column("last_login", TIMESTAMP, default=datetime.now),
+        extend_existing=True
     )
 
     
