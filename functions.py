@@ -3,6 +3,8 @@ from databases import Database
 from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Boolean, TIMESTAMP, Text
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
+from typing import Optional, Dict
+
 import hashlib
 import os
 
