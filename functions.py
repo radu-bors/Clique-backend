@@ -1034,7 +1034,7 @@ async def get_event_initiated_by(db: Database, event_id: UUID) -> UUID:
     return result["initiated_by"]
 
 
-async def get_event_location(db: Database, event_id: UUID) -> List[float, float]:
+async def get_event_location(db: Database, event_id: UUID) -> List[float]:
     """
     Retrieve the location of an event based on event ID.
 
@@ -1043,7 +1043,7 @@ async def get_event_location(db: Database, event_id: UUID) -> List[float, float]
     - event_id (UUID): Unique identifier for the event.
 
     Returns:
-    - List[float, float]: The geographical POINT representing the location of the event.
+    - List[float]: The geographical POINT representing the location of the event.
     """
 
     # Define the structure of the events table
