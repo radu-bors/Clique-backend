@@ -1396,36 +1396,34 @@ async def authenticate_user(db: Database, email: str, hashed_password: str) -> L
         return False, None
 
 
-
-
-async def generate_session_token(db: Database, username: str, password_str: str) -> List[Union[UUID, str]]:
+async def generate_session_token(db: Database, email: str, password_str: str) -> List[Union[UUID, str]]:
     """
     Generates a session token for a user.
 
     Parameters:
     - db (Database): The database connection to auth_db.
-    - username (str): The user's username.
+    - email (str): The user's email.
     - password_str (str): The user's plaintext password.
 
     Returns:
     - List[UUID, str]: The user_id and the generated session token.
     """
 
-    # 1. Search for user_id and salt based on username
+    # 1. Search for user_id and salt based on email
     users_auth = Table(
         "users_auth",
         metadata,
         Column("user_id", UUID, primary_key=True),
-        Column("username", TEXT, unique=True, nullable=False),
+        Column("email", TEXT, unique=True, nullable=False),
         Column("salt", TEXT, nullable=False),
         extend_existing=True
     )
 
-    query = select([users_auth.c.user_id, users_auth.c.salt]).where(users_auth.c.username == username)
+    query = select([users_auth.c.user_id, users_auth.c.salt]).where(users_auth.c.email == email)
     result = await db.fetch_one(query)
 
     if not result:
-        raise ValueError("Username not found.")
+        raise ValueError("Email not found.")
 
     user_id, salt = result["user_id"], result["salt"]
 
@@ -1434,13 +1432,13 @@ async def generate_session_token(db: Database, username: str, password_str: str)
     hash_result = hashlib.sha256(password_with_salt).hexdigest()
 
     # 3. Authenticate user using authenticate_user function
-    auth_success, auth_user_id = await authenticate_user(db, username, hash_result)
+    auth_success, auth_user_id = await authenticate_user(db, email, hash_result)
     if not auth_success:
         raise ValueError("Authentication failed.")
 
     # 4. Generate an entry in the user_sessions table
     expiry_date = datetime.now() + timedelta(days=30)  # 1 month from now
-    token = hashlib.sha256((username + str(datetime.now())).encode('utf-8')).hexdigest()
+    token = hashlib.sha256((email + str(datetime.now())).encode('utf-8')).hexdigest()
 
     user_sessions = Table(
         "user_sessions",
