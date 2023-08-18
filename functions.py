@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
 from datetime import datetime, timedelta
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Union
 
 import uuid
 import hashlib
@@ -1358,7 +1358,7 @@ async def get_event_date_time(db: Database, event_id: UUID) -> str:
     return str(result["event_date_time"])
 
 
-async def authenticate_user(db: Database, email: str, hashed_password: str) -> List[bool, Optional[UUID]]:
+async def authenticate_user(db: Database, email: str, hashed_password: str) -> List[Union[bool, Optional[UUID]]]:
     """
     Authenticate a user based on email and hashed_password.
 
@@ -1398,7 +1398,7 @@ async def authenticate_user(db: Database, email: str, hashed_password: str) -> L
 
 
 
-async def generate_session_token(db: Database, username: str, password_str: str) -> List[UUID, str]:
+async def generate_session_token(db: Database, username: str, password_str: str) -> List[Union[UUID, str]]:
     """
     Generates a session token for a user.
 
