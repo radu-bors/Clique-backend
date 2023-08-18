@@ -2,15 +2,19 @@ from fastapi import FastAPI, Depends, HTTPException, Header
 from databases import Database
 from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Boolean, TIMESTAMP, Text
 from sqlalchemy.dialects.postgresql import UUID
+from typing import Optional
 
 from functions import *
 
-from classes import User
+from classes import *
+
+app = FastAPI()
 
 # create the api object
 app = FastAPI(
     title="LetsClique app API",
-    description="This is the API for the LetsClique app."
+    description="This is the API for the LetsClique app.",
+    version="1.0.1",
 )
 
 # update the databases URLs
@@ -66,6 +70,30 @@ async def add_user(user_data: User, auth_data: dict):
         - 'user_id': The UUID of the newly registered user.
         - 'message': A confirmation message indicating successful registration.
 
+    Example:
+    - curl -X POST "https://letsclique.de/register_user" \
+        -H "accept: application/json" \
+        -H "Content-Type: application/json" \
+        -d '{
+            "user_data": {
+                "first_name": "John",
+                "middle_name": "A.",
+                "last_name": "Doe",
+                "username": "johndoe",
+                "email": "johndoe@example.com",
+                "birthdate": "2000-01-01",
+                "gender": "male",
+                "location": [40.7128, -74.0060],
+                "profile_photo_url": "http://example.com/johndoe.jpg",
+                "description": "Hello, I am John.",
+                "social_media_links": {"twitter": "johndoe"}
+            },
+            "auth_data": {
+                "password": "strong_password_123"
+                        }
+            }'
+
+    
     Errors:
     - 422 Unprocessable Entity: If the provided data doesn't meet the validation criteria.
     - 500 Internal Server Error: If there's an issue inserting the data into either database.
@@ -88,6 +116,36 @@ async def add_user(user_data: User, auth_data: dict):
                         hashed_data['salt'])
     
     return {"user_id": user_data.user_id, "message": "User and authentication data successfully added!"}
+
+
+@app.get("/login_user")
+async def login_user(email: Optional[str] = Header(None), password: Optional[str] = Header(None)):
+    """
+    Endpoint to authenticate a user and provide a session token.
+
+    Parameters:
+    - email (str): The email of the user provided in the header.
+    - password (str): The plaintext password of the user provided in the header.
+
+    Returns:
+    - dict: A dictionary containing the user_id, session token, and a confirmation message.
+    """
+
+    if not email or not password:
+        raise HTTPException(status_code=400, detail="Email and password headers are required.")
+    
+    try:
+        # Call the generate_session_token function
+        user_id, token = await generate_session_token(auth_db_database, email, password)
+        return {
+            "user_id": user_id,
+            "token": token,
+            "message": "Login successful!"
+        }
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error.")
 
 
 # ========================================
