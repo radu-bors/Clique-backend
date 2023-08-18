@@ -1034,7 +1034,7 @@ async def get_event_initiated_by(db: Database, event_id: UUID) -> UUID:
     return result["initiated_by"]
 
 
-async def get_event_location(db: Database, event_id: UUID) -> Tuple[float, float]:
+async def get_event_location(db: Database, event_id: UUID) -> List[float, float]:
     """
     Retrieve the location of an event based on event ID.
 
@@ -1043,7 +1043,7 @@ async def get_event_location(db: Database, event_id: UUID) -> Tuple[float, float
     - event_id (UUID): Unique identifier for the event.
 
     Returns:
-    - Tuple[float, float]: The geographical POINT representing the location of the event.
+    - List[float, float]: The geographical POINT representing the location of the event.
     """
 
     # Define the structure of the events table
@@ -1358,7 +1358,7 @@ async def get_event_date_time(db: Database, event_id: UUID) -> str:
     return str(result["event_date_time"])
 
 
-async def authenticate_user(db: Database, email: str, hashed_password: str) -> Tuple[bool, Optional[UUID]]:
+async def authenticate_user(db: Database, email: str, hashed_password: str) -> List[bool, Optional[UUID]]:
     """
     Authenticate a user based on email and hashed_password.
 
@@ -1368,7 +1368,7 @@ async def authenticate_user(db: Database, email: str, hashed_password: str) -> T
     - hashed_password (str): Hashed password of the user.
 
     Returns:
-    - Tuple[bool, Optional[UUID]]: 
+    - List[bool, Optional[UUID]]: 
       True and the corresponding user_id if a match is found, 
       False and None if no match is found.
     """
@@ -1398,7 +1398,7 @@ async def authenticate_user(db: Database, email: str, hashed_password: str) -> T
 
 
 
-async def generate_session_token(db: Database, username: str, password_str: str) -> Tuple[UUID, str]:
+async def generate_session_token(db: Database, username: str, password_str: str) -> List[UUID, str]:
     """
     Generates a session token for a user.
 
@@ -1408,7 +1408,7 @@ async def generate_session_token(db: Database, username: str, password_str: str)
     - password_str (str): The user's plaintext password.
 
     Returns:
-    - Tuple[UUID, str]: The user_id and the generated session token.
+    - List[UUID, str]: The user_id and the generated session token.
     """
 
     # 1. Search for user_id and salt based on username
