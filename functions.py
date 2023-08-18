@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
 from datetime import datetime, timedelta
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 import uuid
 import hashlib
@@ -69,7 +69,7 @@ async def insert_user(db: Database, user_data: Dict):
         Column("email", String, unique=True, nullable=False),
         Column("birthdate", Date, nullable=False),
         Column("gender", String, nullable=False),
-        Column("location", Text, nullable=False), # Using Text for simplicity; consider using a specific type for POINT if needed
+        Column("location", Text, nullable=False),
         Column("profile_photo_url", String),
         Column("description", String),
         Column("last_online", TIMESTAMP),
@@ -171,10 +171,7 @@ async def insert_user_auth(db: Database, user_id: uuid.UUID, username: str, emai
     return {'user_id': user_id, 'message': 'User authentication data successfully added!'}
 
 
-from databases import Database
-from sqlalchemy import Table, Column, MetaData, update
-from sqlalchemy.dialects.postgresql import UUID, POINT
-from typing import List
+
 
 metadata = MetaData()
 
@@ -198,7 +195,7 @@ async def update_user_location(db: Database, user_id: UUID, coordinates: List[fl
         "users",
         metadata,
         Column("user_id", UUID, primary_key=True),
-        Column("location", POINT, nullable=False),
+        Column("location", Text, nullable=False),
         extend_existing=True
     )
 
@@ -954,7 +951,7 @@ async def insert_event(db: Database, event_data: Dict) -> UUID:
         Column("event_id", UUID, primary_key=True),
         Column("activity_id", BIGINT, nullable=False),
         Column("initiated_by", UUID, nullable=False),
-        Column("location", POINT, nullable=False),
+        Column("location", Text, nullable=False),
         Column("address", TEXT),
         Column("participant_min_age", INT, nullable=False),
         Column("participant_max_age", INT, nullable=False),
@@ -1054,7 +1051,7 @@ async def get_event_location(db: Database, event_id: UUID) -> Tuple[float, float
         "events",
         metadata,
         Column("event_id", UUID, primary_key=True),
-        Column("location", POINT, nullable=False),
+        Column("location", Text, nullable=False),
         extend_existing=True
     )
 
