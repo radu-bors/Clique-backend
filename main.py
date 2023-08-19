@@ -266,8 +266,7 @@ async def update_user_profile_endpoint(
 async def create_event_endpoint(
         event_dict: dict,  # Change this to receive a dictionary
         user_id: uuid.UUID = Header(...), 
-        sessiontoken: str = Header(...),
-        db: Database = Depends(get_db)
+        sessiontoken: str = Header(...)
     ):
     """
     Create a new event.
