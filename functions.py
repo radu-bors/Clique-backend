@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, Header
 from databases import Database
-from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Boolean, TIMESTAMP, Text, CheckConstraint, JSON, select, and_
+from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Boolean, TIMESTAMP, Text, CheckConstraint, JSON, select, and_, DateTime, BIGINT, Integer, ARRAY
 
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
@@ -12,6 +12,9 @@ import uuid
 import hashlib
 import os
 import logging
+
+# Setting up logging
+logger = logging.getLogger(__name__)
 
 
 # creating logger for custom logging
@@ -176,10 +179,6 @@ async def insert_user_auth(db: Database, user_id: uuid.UUID, username: str, emai
 
     return {'user_id': user_id, 'message': 'User authentication data successfully added!'}
 
-
-
-
-metadata = MetaData()
 
 async def update_user_location(db: Database, user_id: UUID, coordinates: List[float]):
     """
@@ -1471,3 +1470,183 @@ async def generate_session_token(db: Database, email: str, password_str: str) ->
     return user_id, token
 
 
+async def authenticate_session_token(db: Database, user_id: UUID, token: str) -> bool:
+    """
+    Authenticate a session token for a user.
+    
+    Parameters:
+    - db (Database): The database connection to auth_db.
+    - user_id (UUID): The user's unique identifier.
+    - token (str): The session token to be authenticated.
+
+    Returns:
+    - bool: True if the token is valid and not expired, False otherwise.
+    """
+    
+    logger.debug(f"Entering authenticate_session_token function for user_id: {user_id}.")
+    
+    # Define the structure of the user_sessions table
+    user_sessions = Table(
+        "user_sessions",
+        metadata,
+        Column("user_id", UUID),
+        Column("token", String, unique=True, nullable=False),
+        Column("expiry", DateTime, nullable=False),
+        extend_existing=True
+    )
+
+    # Query to check if the user_id and token exist in the same record and if the token is not expired
+    current_time = datetime.now()
+    query = select([user_sessions.c.token]).where(
+        and_(user_sessions.c.user_id == user_id, user_sessions.c.token == token, user_sessions.c.expiry > current_time)
+    )
+    
+    result = await db.fetch_one(query)
+    
+    if result:
+        logger.debug(f"Token authenticated successfully for user_id: {user_id}.")
+        return True
+    else:
+        logger.warning(f"Token authentication failed for user_id: {user_id}.")
+        return False
+
+
+async def update_event_location(db: Database, event_id: UUID, new_location: List[float]) -> None:
+    """
+    Updates the location of a specified event in the events table.
+
+    Parameters:
+    - db (Database): The database connection to app_db.
+    - event_id (UUID): The unique identifier of the event.
+    - new_location (List[float]): A list containing the new latitude and longitude coordinates of the event.
+
+    Returns:
+    - None: The function will update the event's location in the database.
+    """
+    
+    logger.debug(f"Entering update_event_location function for event_id: {event_id} with new location: {new_location}.")
+
+    try:
+        # Define the structure of the events table
+        events = Table(
+            "events",
+            metadata,
+            Column("event_id", UUID, primary_key=True),
+            Column("location", Text, nullable=False),
+            extend_existing=True
+        )
+        
+        # Construct the update query
+        query = events.update().where(events.c.event_id == event_id).values(location=str(new_location))
+        
+        # Execute the update query
+        await db.execute(query)
+        
+        logger.debug(f"Successfully updated location for event with ID: {event_id}.")
+        
+        return {'event_id': event_id, 'message': 'Event location successfully updated!'}
+
+    
+    except Exception as e:
+        logger.error(f"Error while updating location for event with ID: {event_id}. Error: {str(e)}")
+        raise e  # Re-raise the exception after logging
+
+
+async def insert_event(db: Database, event_data: Dict):
+    """
+    Inserts a new event into the events table in the app_db database.
+
+    Parameters:
+    - db: The database connection.
+    - event_data (dict): A dictionary containing event data with the following keys:
+        - event_id (UUID): Unique identifier for the event.
+        - activity_id (BIGINT): Identifier for the activity.
+        - initiated_by (UUID): Identifier for the user initiating the event.
+        - location (POINT): Geographical point representing event's location.
+        - address (Text, optional): Address where the event is taking place.
+        - participant_min_age (INT): Minimum age for participants.
+        - participant_max_age (INT): Maximum age for participants.
+        - participant_pref_genders (TEXT[]): Preferred genders for participants.
+        - description (TEXT): Description of the event.
+        - event_picture_url (Text, optional): URL to the event's picture.
+        - event_date_time (TIMESTAMP, optional): Timestamp of when the event will take place.
+
+    Returns:
+    - The event_id of the inserted event.
+    """
+    
+    # Auto-generate the initiated_on timestamp
+    initiated_on_timestamp = datetime.now()
+    event_data["initiated_on"] = initiated_on_timestamp
+    
+    # Open event
+    event_data["is_open"] = True
+    
+    # Define structure of the events table
+    events = Table(
+        "events",
+        metadata,
+        Column("event_id", UUID, primary_key=True),
+        Column("activity_id", BIGINT, nullable=False),
+        Column("initiated_by", UUID, nullable=False),
+        Column("location", Text, nullable=False),
+        Column("address", Text),
+        Column("participant_min_age", Integer, nullable=False),
+        Column("participant_max_age", Integer, nullable=False),
+        Column("participant_pref_genders", ARRAY(String), nullable=False),
+        Column("description", Text, nullable=False),
+        Column("is_open", Boolean, nullable=False),
+        Column("initiated_on", TIMESTAMP, nullable=False),
+        Column("event_picture_url", Text),
+        Column("event_date_time", TIMESTAMP),
+        extend_existing=True
+    )
+    
+    query = events.insert().values(**event_data)
+    
+    logger.debug(f"Inserting event with ID: {event_data['event_id']}.")
+    result = await db.execute(query)
+    logger.info(f"Successfully inserted event with ID: {event_data['event_id']}.")
+    
+    return result
+
+
+async def get_activity_id(db: Database, activity_name: str) -> int:
+    """
+    Fetch the activity_id corresponding to a given activity_name from the activities table.
+
+    Parameters:
+    - db (Database): The database connection.
+    - activity_name (str): The name of the activity.
+
+    Returns:
+    - int: The activity_id corresponding to the provided activity_name.
+    """
+    
+    # Define the SQLAlchemy ORM structure for the activities table.
+    activities = Table(
+        "activities",
+        metadata,
+        Column("activity_name", String, unique=True, nullable=False),
+        Column("activity_id", BIGINT, primary_key=True)
+    )
+    
+    # Log the attempt to fetch the activity_id.
+    logger.info(f"Attempting to fetch activity_id for activity_name: {activity_name}")
+    
+    # Construct the SQL query to retrieve the activity_id for the given activity_name.
+    query = select([activities.c.activity_id]).where(activities.c.activity_name == activity_name)
+    
+    # Execute the query.
+    result = await db.fetch_one(query)
+
+    # Check if the result exists. If not, log an error and raise an exception.
+    if not result:
+        logger.error(f"No activity found with name: {activity_name}")
+        raise ValueError(f"No activity found with name: {activity_name}")
+    
+    # Log the successful retrieval of the activity_id.
+    logger.debug(f"Fetched activity_id {result['activity_id']} for activity_name: {activity_name}")
+    
+    # Return the retrieved activity_id.
+    return result["activity_id"]

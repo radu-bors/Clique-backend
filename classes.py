@@ -18,3 +18,15 @@ class User(BaseModel):
     last_online: datetime = datetime.now()
     social_media_links: Optional[dict] = None
 
+class Event(BaseModel):
+    event_id: uuid.UUID = uuid.uuid4()
+    activity_id: int
+    initiated_by: uuid.UUID
+    location: List[float]
+    address: Optional[str] = None
+    participant_min_age: int
+    participant_max_age: int
+    participant_pref_genders: List[str]
+    description: str
+    event_picture_url: Optional[str] = None
+    event_date_time: Optional[datetime] = None
