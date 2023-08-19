@@ -424,8 +424,7 @@ from sqlalchemy import select, and_, func
 async def close_event_endpoint(
     request_data: dict,
     user_id: UUID = Header(...),
-    sessiontoken: str = Header(...),
-    db: Database = Depends(get_db)
+    sessiontoken: str = Header(...)
 ):
     """
     Close (soft delete) an event based on the event_id provided in the request body.
@@ -456,7 +455,7 @@ async def close_event_endpoint(
     logger.debug(f"Attempting to close event with ID: {request_data['event_id']} by user with ID: {user_id}.")
     
     # Authenticate the user's session token
-    is_authenticated = await authenticate_session_token(db, user_id, sessiontoken)
+    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
     if not is_authenticated:
         logger.warning(f"Authentication failed for user with ID: {user_id}.")
         raise HTTPException(status_code=401, detail="Authentication failed.")
@@ -466,14 +465,14 @@ async def close_event_endpoint(
         # ... [rest of the events table definition as provided earlier]
     )
     event_query = select([events.c.initiated_by]).where(events.c.event_id == request_data['event_id'])
-    event_initiator = await db.fetch_one(event_query)
+    event_initiator = await app_db_database.fetch_one(event_query)
 
     if not event_initiator or event_initiator['initiated_by'] != user_id:
         logger.warning(f"User with ID: {user_id} is not authorized to close event with ID: {request_data['event_id']}.")
         raise HTTPException(status_code=403, detail="You are not authorized to close this event.")
     
     # Close the event
-    await close_event(db, request_data['event_id'])
+    await close_event(app_db_database, request_data['event_id'])
     
     return {"message": "Event successfully closed."}
 
