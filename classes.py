@@ -30,3 +30,10 @@ class Event(BaseModel):
     description: str
     event_picture_url: Optional[str] = None
     event_date_time: Optional[datetime] = None
+
+class EventFilterCriteria(BaseModel):
+    activity_names: List[str]
+    pref_genders: List[str]
+    min_age: int
+    max_age: int
+    radius: float

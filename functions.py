@@ -12,6 +12,7 @@ import uuid
 import hashlib
 import os
 import logging
+import math
 
 # Setting up logging
 logger = logging.getLogger(__name__)
@@ -1652,3 +1653,139 @@ async def get_activity_id(db: Database, activity_name: str) -> int:
     return result["activity_id"]
 
 
+async def close_event(db: Database, event_id: uuid.UUID) -> None:
+    """
+    Close an event by setting its is_open field to False.
+
+    Parameters:
+    - db (Database): The database connection.
+    - event_id (uuid.UUID): The unique identifier of the event to be closed.
+
+    Raises:
+    - ValueError: If no event is found with the provided event_id.
+
+    Returns:
+    - None: The function returns nothing but logs the event's closure process.
+    """
+    
+    # Define the structure of the events table for reference
+    events = Table(
+        "events",
+        metadata,
+        Column("event_id", UUID, primary_key=True),
+        Column("activity_id", BIGINT, nullable=False),
+        Column("initiated_by", UUID, nullable=False),
+        Column("location", Text, nullable=False),
+        Column("address", Text),
+        Column("participant_min_age", Integer, nullable=False),
+        Column("participant_max_age", Integer, nullable=False),
+        Column("participant_pref_genders", ARRAY(String), nullable=False),
+        Column("description", Text, nullable=False),
+        Column("is_open", Boolean, nullable=False),
+        Column("initiated_on", TIMESTAMP, nullable=False),
+        Column("event_picture_url", Text),
+        Column("event_date_time", TIMESTAMP),
+        extend_existing=True
+    )
+
+    logger.debug(f"Attempting to close event with ID: {event_id}.")
+    
+    # Update the is_open field of the event
+    query = (
+        update(events)
+        .where(events.c.event_id == event_id)
+        .values(is_open=False)
+    )
+    result = await db.execute(query)
+
+    if not result:
+        logger.error(f"No event found with ID: {event_id}.")
+        raise ValueError(f"No event found with ID: {event_id}.")
+    
+    logger.info(f"Successfully closed event with ID: {event_id}.")
+
+
+def haversine_distance(loc1: list, loc2: list) -> int:
+    """
+    Calculate the Haversine distance between two points on the earth specified by latitude and longitude.
+
+    Parameters:
+    - loc1 (list): A list containing the latitude and longitude of the first location.
+    - loc2 (list): A list containing the latitude and longitude of the second location.
+
+    Returns:
+    - int: The distance between the two locations in kilometers (rounded to the nearest whole number).
+    
+    Example:
+    >>> haversine_distance([40.7128, -74.0060], [34.0522, -118.2437])
+    3931
+    """
+    
+    # Check if the locations have the correct format
+    if not (len(loc1) == 2 and len(loc2) == 2):
+        logger.error("Invalid location format. Each location should be a list with 2 elements.")
+        raise ValueError("Each location should be a list with 2 elements: [latitude, longitude].")
+    
+    logger.debug(f"Calculating distance between {loc1} and {loc2}")
+    
+    # Radius of the Earth in kilometers
+    R = 6371.0
+    
+    # Convert degrees to radians
+    lat1 = math.radians(loc1[0])
+    lon1 = math.radians(loc1[1])
+    lat2 = math.radians(loc2[0])
+    lon2 = math.radians(loc2[1])
+    
+    # Compute differences between the two sets of lat/longs
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    
+    # Haversine formula
+    a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    distance = R * c
+
+    logger.debug(f"Calculated distance: {distance} km")
+    
+    return int(round(distance))
+
+
+async def get_user_location(db, user_id: UUID) -> str:
+    """
+    Fetch the location of a user based on the provided user_id from the users table.
+
+    Parameters:
+    - db (Database): The database connection.
+    - user_id (UUID): The unique identifier of the user.
+
+    Returns:
+    - str: The location of the user.
+
+    Errors:
+    - ValueError: If no user is found with the provided user_id.
+    """
+    
+    # Define the structure of the users table for reference
+    users = Table(
+        "users",
+        metadata,
+        Column("user_id", UUID, primary_key=True),
+        Column("location", String, nullable=False),
+        # ... [rest of the columns]
+    )
+    
+    logger.info(f"Attempting to fetch location for user with ID: {user_id}")
+
+    # Construct the select query
+    query = select([users.c.location]).where(users.c.user_id == user_id)
+    result = await db.fetch_one(query)
+
+    if not result:
+        logger.error(f"No user found with ID: {user_id}")
+        raise ValueError(f"No user found with ID: {user_id}")
+
+    location = result["location"]
+    
+    logger.debug(f"Fetched location {location} for user with ID: {user_id}")
+    return location

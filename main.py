@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Depends, HTTPException, Header, Body
 from databases import Database
-from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Boolean, TIMESTAMP, Text, select, and_
+from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Boolean, TIMESTAMP, Text, select, and_, BIGINT, Integer, ARRAY, join
 from sqlalchemy.dialects.postgresql import UUID
-from typing import Optional
+from typing import Optional, Dict, List
 
 import logging
 import uuid
@@ -418,6 +418,525 @@ async def update_event_endpoint(
     
     return {"message": "Event details updated successfully."}
 
+from sqlalchemy import select, and_, func
+
+@app.post("/delete_event")
+async def close_event_endpoint(
+    request_data: dict,
+    user_id: UUID = Header(...),
+    sessiontoken: str = Header(...),
+    db: Database = Depends(get_db)
+):
+    """
+    Close (soft delete) an event based on the event_id provided in the request body.
+
+    This endpoint accepts an event_id in the request body and sets the event's is_open 
+    field to False in the `events` table of the `app_db` database, effectively closing the event.
+
+    Parameters:
+    - request_data (dict): A dictionary containing the event_id to be closed.
+    - user_id (UUID, header): The unique identifier of the user.
+    - sessiontoken (str, header): The session token of the user.
+
+    Returns:
+    - dict: A dictionary containing a confirmation message.
+
+    Example:
+    - curl -X POST "https://letsclique.de/delete_event" \
+     -H "user_id: some-uuid" \
+     -H "sessiontoken: some-token" \
+     -d '{"event_id": "some-uuid"}'
+
+    Errors:
+    - 401 Unauthorized: If the authentication fails.
+    - 403 Forbidden: If the event_id provided does not correspond to the user_id.
+    - 500 Internal Server Error: If there's an issue updating the data in the database.
+    """
+    
+    logger.debug(f"Attempting to close event with ID: {request_data['event_id']} by user with ID: {user_id}.")
+    
+    # Authenticate the user's session token
+    is_authenticated = await authenticate_session_token(db, user_id, sessiontoken)
+    if not is_authenticated:
+        logger.warning(f"Authentication failed for user with ID: {user_id}.")
+        raise HTTPException(status_code=401, detail="Authentication failed.")
+    
+    # Check if the event_id corresponds to the user_id in the events table
+    events = Table(
+        # ... [rest of the events table definition as provided earlier]
+    )
+    event_query = select([events.c.initiated_by]).where(events.c.event_id == request_data['event_id'])
+    event_initiator = await db.fetch_one(event_query)
+
+    if not event_initiator or event_initiator['initiated_by'] != user_id:
+        logger.warning(f"User with ID: {user_id} is not authorized to close event with ID: {request_data['event_id']}.")
+        raise HTTPException(status_code=403, detail="You are not authorized to close this event.")
+    
+    # Close the event
+    await close_event(db, request_data['event_id'])
+    
+    return {"message": "Event successfully closed."}
+
+
+@app.get("/filter_events")
+async def filter_events_endpoint(
+    filter_criteria: EventFilterCriteria,
+    user_id: UUID = Header(...),
+    sessiontoken: str = Header(...)
+) -> Dict[str, List]:
+    """
+    Endpoint to filter events based on given criteria.
+
+    This endpoint accepts filter criteria in the request body and returns events from 
+    the `events` table of the `app_db` database that match the criteria.
+
+    Parameters:
+    - filter_criteria (EventFilterCriteria): A dictionary containing filter parameters.
+    - user_id (UUID, header): The unique identifier of the user.
+    - sessiontoken (str, header): The session token of the user.
+
+    Returns:
+    - dict: A dictionary containing:
+        - 'event_ids': A list of event IDs that match the criteria.
+        - 'event_locations': A list of locations for the matching events.
+        - 'event_activities': A list of activity IDs for the matching events.
+        - 'message': A confirmation message.
+
+    Errors:
+    - 401 Unauthorized: If the authentication fails.
+    """
+    
+    logger.debug(f"Filtering events for user with ID: {user_id} based on provided criteria.")
+
+    # Authenticate the user's session token
+    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    if not is_authenticated:
+        logger.warning(f"Authentication failed for user with ID: {user_id}.")
+        raise HTTPException(status_code=401, detail="Authentication failed.")
+
+    # Get the user's location
+    user_location = await get_user_location(app_db_database, user_id)
+
+    # Convert activity names to activity IDs
+    activity_ids = [await get_activity_id(app_db_database, name) for name in filter_criteria.activity_names]
+
+    # Define the structure of the events table for reference
+    events = Table(
+        "events",
+        metadata,
+        Column("event_id", UUID, primary_key=True),
+        Column("activity_id", BIGINT, nullable=False),
+        Column("initiated_by", UUID, nullable=False),
+        Column("location", Text, nullable=False),
+        Column("address", Text),
+        Column("participant_min_age", Integer, nullable=False),
+        Column("participant_max_age", Integer, nullable=False),
+        Column("participant_pref_genders", ARRAY(String), nullable=False),
+        Column("description", Text, nullable=False),
+        Column("is_open", Boolean, nullable=False),
+        Column("initiated_on", TIMESTAMP, nullable=False),
+        Column("event_picture_url", Text),
+        Column("event_date_time", TIMESTAMP)
+    )
+
+    # Query to fetch events based on activity IDs
+    query = select([events]).where(
+        and_(
+            events.c.activity_id.in_(activity_ids),
+            events.c.participant_min_age <= filter_criteria.max_age,
+            events.c.participant_max_age >= filter_criteria.min_age
+        )
+    )
+    all_relevant_events = await app_db_database.fetch_all(query)
+
+    # Further filter events in Python based on distance and preferred genders
+    filtered_events = [
+        event for event in all_relevant_events 
+        if set(event.participant_pref_genders).intersection(filter_criteria.pref_genders)
+        and haversine_distance(user_location, event.location) <= filter_criteria.radius
+    ]
+
+    # Extract event details from the filtered results
+    event_ids = [event.event_id for event in filtered_events]
+    event_locations = [event.location for event in filtered_events]
+    event_activities = [event.activity_id for event in filtered_events]
+
+    logger.debug(f"Filtered {len(event_ids)} events for user with ID: {user_id} based on provided criteria.")
+    
+    return {
+        "event_ids": event_ids,
+        "event_locations": event_locations,
+        "event_activities": event_activities,
+        "message": f"Successfully filtered {len(event_ids)} events."
+    }
+
+
+from sqlalchemy import select, join
+
+@app.get("/get_event_details/{event_id}")
+async def get_event_details_endpoint(
+    event_id: UUID,
+    user_id: UUID = Header(...),
+    sessiontoken: str = Header(...)
+) -> Dict[str, Union[str, UUID]]:
+    """
+    Endpoint to fetch details of a specific event.
+
+    This endpoint retrieves the details of an event specified by its `event_id`.
+
+    Parameters:
+    - event_id (UUID, path): The unique identifier of the event.
+    - user_id (UUID, header): The unique identifier of the user.
+    - sessiontoken (str, header): The session token of the user.
+
+    Returns:
+    - dict: A dictionary containing:
+        - 'activity_name': The name of the activity associated with the event.
+        - 'initiator_id': The user ID of the event initiator.
+        - 'event_description': The description of the event.
+        - 'message': A confirmation message.
+
+    Errors:
+    - 401 Unauthorized: If the authentication fails.
+    - 404 Not Found: If the event with the specified ID does not exist.
+    """
+    
+    logger.debug(f"Fetching details for event with ID: {event_id} requested by user with ID: {user_id}.")
+
+    # Authenticate the user's session token
+    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    if not is_authenticated:
+        logger.warning(f"Authentication failed for user with ID: {user_id}.")
+        raise HTTPException(status_code=401, detail="Authentication failed.")
+
+    # Define the structure of the events and activities tables for reference
+    events = Table(
+        "events",
+        metadata,
+        Column("event_id", UUID, primary_key=True),
+        Column("activity_id", BIGINT, nullable=False),
+        Column("initiated_by", UUID, nullable=False),
+        Column("description", Text, nullable=False),
+        # ... [other columns]
+    )
+
+    activities = Table(
+        "activities",
+        metadata,
+        Column("activity_id", BIGINT, primary_key=True),
+        Column("activity_name", Text, nullable=False),
+    )
+
+    # Join the tables on the activity_id and fetch event details
+    query = (
+        select([activities.c.activity_name, events.c.initiated_by, events.c.description])
+        .select_from(events.join(activities, events.c.activity_id == activities.c.activity_id))
+        .where(events.c.event_id == event_id)
+    )
+
+    result = await app_db_database.fetch_one(query)
+
+    # Check if the event was found
+    if not result:
+        logger.warning(f"Event with ID: {event_id} not found.")
+        raise HTTPException(status_code=404, detail="Event not found.")
+
+    logger.debug(f"Successfully fetched details for event with ID: {event_id}.")
+
+    return {
+        "activity_name": result.activity_name,
+        "initiator_id": result.initiated_by,
+        "event_description": result.description,
+        "message": "Event details fetched successfully."
+    }
+
+
+@app.get("/get_event_details/{event_id}")
+async def get_event_details_endpoint(
+    event_id: UUID,
+    user_id: UUID = Header(...),
+    sessiontoken: str = Header(...)
+) -> Dict[str, Union[str, UUID]]:
+    """
+    Endpoint to fetch details of a specific event.
+
+    This endpoint retrieves the details of an event specified by its `event_id`.
+
+    Parameters:
+    - event_id (UUID, path): The unique identifier of the event.
+    - user_id (UUID, header): The unique identifier of the user.
+    - sessiontoken (str, header): The session token of the user.
+
+    Returns:
+    - dict: A dictionary containing:
+        - 'activity_name': The name of the activity associated with the event.
+        - 'initiator_id': The user ID of the event initiator.
+        - 'event_description': The description of the event.
+        - 'message': A confirmation message.
+
+    Errors:
+    - 401 Unauthorized: If the authentication fails.
+    - 404 Not Found: If the event with the specified ID does not exist.
+    """
+    
+    logger.debug(f"Fetching details for event with ID: {event_id} requested by user with ID: {user_id}.")
+
+    # Authenticate the user's session token
+    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    if not is_authenticated:
+        logger.warning(f"Authentication failed for user with ID: {user_id}.")
+        raise HTTPException(status_code=401, detail="Authentication failed.")
+
+    # Define the structure of the events and activities tables for reference
+    events = Table(
+        "events",
+        metadata,
+        Column("event_id", UUID, primary_key=True),
+        Column("activity_id", BIGINT, nullable=False),
+        Column("initiated_by", UUID, nullable=False),
+        Column("description", Text, nullable=False)
+    )
+
+    activities = Table(
+        "activities",
+        metadata,
+        Column("activity_id", BIGINT, primary_key=True),
+        Column("activity_name", Text, nullable=False)
+    )
+
+    # Join the tables on the activity_id and fetch event details
+    query = (
+        select([activities.c.activity_name, events.c.initiated_by, events.c.description])
+        .select_from(events.join(activities, events.c.activity_id == activities.c.activity_id))
+        .where(events.c.event_id == event_id)
+    )
+
+    result = await app_db_database.fetch_one(query)
+
+    # Check if the event was found
+    if not result:
+        logger.warning(f"Event with ID: {event_id} not found.")
+        raise HTTPException(status_code=404, detail="Event not found.")
+
+    logger.debug(f"Successfully fetched details for event with ID: {event_id}.")
+
+    return {
+        "activity_name": result.activity_name,
+        "initiator_id": result.initiated_by,
+        "event_description": result.description,
+        "message": "Event details fetched successfully."
+    }
+    
+    
+@app.get("/get_user_details/{target_user_id}")
+async def get_user_details_endpoint(
+    target_user_id: UUID,
+    user_id: UUID = Header(...),
+    sessiontoken: str = Header(...)
+):
+    """
+    Retrieve the details of a user.
+
+    This endpoint fetches and returns selected details of a user specified by `target_user_id`.
+
+    Parameters:
+    - target_user_id (UUID, path): The ID of the user whose details are to be retrieved.
+    - user_id (UUID, header): The unique identifier of the user making the request.
+    - sessiontoken (str, header): The session token of the user making the request.
+
+    Returns:
+    - dict: A dictionary containing the user's details.
+
+    Errors:
+    - 401 Unauthorized: If the authentication fails.
+    - 404 Not Found: If the `target_user_id` does not correspond to any user in the database.
+    """
+    
+    # Authenticate the user's session token
+    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    if not is_authenticated:
+        logger.warning(f"Authentication failed for user with ID: {user_id}.")
+        raise HTTPException(status_code=401, detail="Authentication failed.")
+    
+    # Partial definition of the `users` table
+    users = Table(
+        "users",
+        metadata,
+        Column("user_id", UUID, primary_key=True),
+        Column("first_name", Text, nullable=False),
+        Column("last_name", Text, nullable=False),
+        Column("middle_name", Text),
+        Column("birthdate", DATE, nullable=False),
+        Column("location", Text, nullable=False),
+        Column("profile_photo_url", Text),
+        Column("last_online", TIMESTAMP)
+    )
+
+    # Fetch the user details
+    query = select(users).where(users.c.user_id == target_user_id)
+    user_record = await app_db_database.fetch_one(query)
+    
+    # If no user found with the given `target_user_id`
+    if not user_record:
+        logger.error(f"User details not found for user with ID: {target_user_id}.")
+        raise HTTPException(status_code=404, detail="User not found.")
+    
+    # Calculate age from birthdate
+    today = datetime.today()
+    age = today.year - user_record.birthdate.year - ((today.month, today.day) < (user_record.birthdate.month, user_record.birthdate.day))
+
+    # Construct the response dictionary
+    user_details = {
+        "first_name": user_record.first_name,
+        "last_name": user_record.last_name,
+        "middle_name": user_record.middle_name,
+        "age": age,
+        "location": user_record.location,
+        "profile_photo_url": user_record.profile_photo_url,
+        "last_online": user_record.last_online
+    }
+    
+    logger.debug(f"Successfully fetched details for user with ID: {target_user_id}.")
+
+    return user_details
+
+
+@app.get("/is_participant")
+async def is_participant_endpoint(
+    user_id: UUID = Header(...),
+    sessiontoken: str = Header(...),
+    event_id: UUID = Header(...),
+    participant_id: UUID = Header(...)
+):
+    """
+    Determine if a user is a participant of a given event.
+
+    Parameters:
+    - user_id (UUID, header): The unique identifier of the user making the request.
+    - sessiontoken (str, header): The session token of the user making the request.
+    - event_id (UUID, header): The ID of the event in question.
+    - participant_id (UUID, header): The ID of the participant in question.
+
+    Returns:
+    - dict: A dictionary indicating whether the user is a participant and a confirmation message.
+
+    Errors:
+    - 401 Unauthorized: If the authentication fails.
+    """
+    
+    # Authenticate the user's session token
+    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    if not is_authenticated:
+        logger.warning(f"Authentication failed for user with ID: {user_id}.")
+        raise HTTPException(status_code=401, detail="Authentication failed.")
+    
+    # Define the structure of the participation_requests table
+    participation_requests = Table(
+        "participation_requests",
+        metadata,
+        Column("event_id", UUID, primary_key=True),
+        Column("event_creator", UUID),
+        Column("request_participant", UUID),
+        Column("accepted_status", Boolean),
+        Column("chat_id", UUID),
+        Column("chat_block", Text)
+        # ... other columns can be added as needed
+    )
+    
+    # Query to check if the participant_id is a participant of the event_id
+    query = (
+        select(participation_requests.c.accepted_status)
+        .where(participation_requests.c.event_id == event_id)
+        .where(participation_requests.c.request_participant == participant_id)
+    )
+    record = await app_db_database.fetch_one(query)
+
+    # Determine the participation status
+    if record:
+        is_participant = record.accepted_status
+        message = "User is a participant of the event." if is_participant else "User is not a participant of the event."
+    else:
+        is_participant = False
+        message = "No participation request found for the user for this event."
+
+    logger.debug(f"Checked participation status for user {participant_id} in event {event_id}: {is_participant}")
+    
+    return {"is_participant": is_participant, "message": message}
+
+
+@app.post("/request_to_join_event")
+async def request_to_join_event_endpoint(
+    user_id: UUID = Header(...),
+    sessiontoken: str = Header(...),
+    event_id: UUID = Header(...)
+):
+    """
+    Request to join a specific event.
+
+    Parameters:
+    - user_id (UUID, header): The unique identifier of the user making the request.
+    - sessiontoken (str, header): The session token of the user making the request.
+    - event_id (UUID, header): The ID of the event the user wants to join.
+
+    Returns:
+    - dict: A dictionary containing a confirmation message.
+
+    Errors:
+    - 401 Unauthorized: If the authentication fails.
+    """
+    
+    # Authenticate the user's session token
+    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    if not is_authenticated:
+        logger.warning(f"Authentication failed for user with ID: {user_id}.")
+        raise HTTPException(status_code=401, detail="Authentication failed.")
+    
+    # Define the structure of the events table
+    events = Table(
+        "events",
+        metadata,
+        Column("event_id", UUID, primary_key=True),
+        Column("initiated_by", UUID),
+    )
+
+    # Define the structure of the participation_requests table
+    participation_requests = Table(
+        "participation_requests",
+        metadata,
+        Column("event_id", UUID, primary_key=True),
+        Column("event_creator", UUID),
+        Column("request_participant", UUID),
+        Column("accepted_status", Boolean),
+        Column("chat_id", UUID),
+        Column("chat_block", Text)
+    )
+    
+    # Search for the event's creator
+    query = select(events.c.initiated_by).where(events.c.event_id == event_id)
+    event_creator = await app_db_database.fetch_val(query)
+
+    if not event_creator:
+        logger.warning(f"No event found for event ID: {event_id}.")
+        raise HTTPException(status_code=404, detail="Event not found.")
+    
+    # Generate a new chat_id
+    chat_id = uuid.uuid4()
+
+    # Insert request to join event into the participation_requests table
+    query = (
+        insert(participation_requests)
+        .values(
+            event_id=event_id,
+            event_creator=event_creator,
+            request_participant=user_id,
+            chat_id=chat_id
+        )
+    )
+    await app_db_database.execute(query)
+
+    logger.debug(f"User {user_id} requested to join event {event_id}. Chat ID generated: {chat_id}.")
+    
+    return {"message": "Your request to join the event has been successfully submitted."}
 
 
 
