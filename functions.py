@@ -1650,3 +1650,5 @@ async def get_activity_id(db: Database, activity_name: str) -> int:
     
     # Return the retrieved activity_id.
     return result["activity_id"]
+
+

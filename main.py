@@ -164,12 +164,12 @@ async def login_user(email: Optional[str] = Header(None), password: Optional[str
 
 
 @app.post("/update_user_location")
-async def update_user_location_endpoint(user_id: UUID = Header(...), sessiontoken: str = Header(...), location: str = Header(...)):
+async def update_user_location_endpoint(user_id: uuid.UUID = Header(...), sessiontoken: str = Header(...), location: str = Header(...)):
     """
     Endpoint to update the location of a user and their open events.
     
     Parameters:
-    - user_id (UUID, header): The unique identifier of the user.
+    - user_id (uuid.UUID, header): The unique identifier of the user.
     - sessiontoken (str, header): The session token of the user.
     - location (str, header): The new location coordinates in "latitude,longitude" format.
     
@@ -209,7 +209,7 @@ async def update_user_location_endpoint(user_id: UUID = Header(...), sessiontoke
 @app.post("/update_user_profile")
 async def update_user_profile_endpoint(
     user_data: User,
-    user_id: UUID = Header(...),
+    user_id: uuid.UUID = Header(...),
     sessiontoken: str = Header(...)
     ):
     """
@@ -217,7 +217,7 @@ async def update_user_profile_endpoint(
     
     Parameters:
     - user_data (User): A Pydantic model instance containing user information.
-    - user_id (UUID, header): The unique identifier of the user.
+    - user_id (uuid.UUID, header): The unique identifier of the user.
     - sessiontoken (str, header): The session token of the user.
     
     Returns:
@@ -265,7 +265,7 @@ async def update_user_profile_endpoint(
 @app.post("/create_event")
 async def create_event_endpoint(
         event_dict: dict,  # Change this to receive a dictionary
-        user_id: UUID = Header(...), 
+        user_id: uuid.UUID = Header(...), 
         sessiontoken: str = Header(...),
         db: Database = Depends(get_db)
     ):
@@ -277,7 +277,7 @@ async def create_event_endpoint(
 
     Parameters:
     - event_dict (dict): A dictionary containing event information.
-    - user_id (UUID, header): The unique identifier of the user.
+    - user_id (uuid.UUID, header): The unique identifier of the user.
     - sessiontoken (str, header): The session token of the user.
 
     Returns:
@@ -335,7 +335,7 @@ async def create_event_endpoint(
 @app.post("/update_event")
 async def update_event_endpoint(
     event_data: dict,
-    user_id: UUID = Header(...),
+    user_id: uuid.UUID = Header(...),
     sessiontoken: str = Header(...),
 ):
     """
@@ -346,7 +346,7 @@ async def update_event_endpoint(
 
     Parameters:
     - event_data (dict): A dictionary containing updated event information.
-    - user_id (UUID, header): The unique identifier of the user.
+    - user_id (uuid.UUID, header): The unique identifier of the user.
     - sessiontoken (str, header): The session token of the user.
 
     Returns:
@@ -418,6 +418,8 @@ async def update_event_endpoint(
     logger.debug(f"Event details updated successfully for event with ID: {event_data['event_id']} by user with ID: {user_id}.")
     
     return {"message": "Event details updated successfully."}
+
+
 
 
 
