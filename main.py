@@ -4,6 +4,8 @@ from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Boo
 from sqlalchemy.dialects.postgresql import UUID
 from typing import Optional
 
+import logging
+
 from functions import *
 
 from classes import *
@@ -16,6 +18,8 @@ app = FastAPI(
     description="This is the API for the LetsClique app.",
     version="1.0.1",
 )
+
+logging.basicConfig(level=logging.DEBUG)
 
 # update the databases URLs
 APP_DB_DATABASE_URL = "postgresql://user:password@app_db:5432/app_db"
