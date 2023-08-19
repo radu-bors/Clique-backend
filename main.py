@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Depends, HTTPException, Header, Body, Query
 from databases import Database
-from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Boolean, TIMESTAMP, Text, select, and_, BIGINT, Integer, ARRAY, join
+from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Boolean, TIMESTAMP, Text, select, and_, BIGINT, Integer, ARRAY, join, update
 from sqlalchemy.dialects.postgresql import UUID
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Union
 
 import logging
 import uuid
@@ -938,7 +938,452 @@ async def request_to_join_event_endpoint(
     return {"message": "Your request to join the event has been successfully submitted."}
 
 
+@app.get("/get_incoming_requests")
+async def get_incoming_requests_endpoint(
+    user_id: uuid.UUID = Header(...),
+    sessiontoken: str = Header(...),
+    event_id: uuid.UUID = Header(...)
+) -> Dict[str, List]:
+    """
+    Endpoint to fetch the list of users who have requested to join a specific event.
 
+    Parameters:
+    - user_id (UUID, header): The unique identifier of the user (event creator).
+    - sessiontoken (str, header): The session token of the user.
+    - event_id (UUID, header): The unique identifier of the event.
+
+    Returns:
+    - dict: A dictionary containing:
+        - 'user_ids': A list of user IDs who have requested to join the event.
+        - 'locations': A list of locations corresponding to each user in 'user_ids'.
+
+    Errors:
+    - 401 Unauthorized: If the authentication fails.
+    - 404 Not Found: If no requests are found for the specified event.
+    """
+    
+    logger.debug(f"Fetching incoming join requests for event with ID: {event_id} for user with ID: {user_id}.")
+
+    # Authenticate the user's session token
+    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    if not is_authenticated:
+        logger.warning(f"Authentication failed for user with ID: {user_id}.")
+        raise HTTPException(status_code=401, detail="Authentication failed.")
+
+    # Define the structure of the participation_requests table for reference
+    participation_requests = Table(
+        "participation_requests",
+        metadata,
+        Column("event_id", uuid.UUID, nullable=False),
+        Column("event_creator", uuid.UUID, nullable=False),
+        Column("request_participant", uuid.UUID, nullable=False),
+        # ... [rest of the columns]
+    )
+
+    # Query to fetch all participation requests for the given event_id and user_id (event creator)
+    query = (
+        select([participation_requests.c.request_participant])
+        .where(participation_requests.c.event_id == event_id)
+        .where(participation_requests.c.event_creator == user_id)
+    )
+
+    result = await app_db_database.fetch_all(query)
+
+    # Check if any requests were found
+    if not result:
+        logger.warning(f"No incoming join requests found for event with ID: {event_id}.")
+        raise HTTPException(status_code=404, detail="No incoming join requests found for the specified event.")
+
+    # Fetch the location for each request participant
+    user_ids = [r["request_participant"] for r in result]
+    locations = [await get_user_location(app_db_database, uid) for uid in user_ids]
+
+    logger.debug(f"Successfully fetched incoming join requests for event with ID: {event_id}.")
+
+    return {
+        "user_ids": user_ids,
+        "locations": locations
+    }
+
+
+@app.post("/accept_participant")
+async def accept_participant_endpoint(
+    user_id: uuid.UUID = Header(...),
+    sessiontoken: str = Header(...),
+    participant_id: uuid.UUID = Header(...),
+    event_id: uuid.UUID = Header(...)
+) -> Dict[str, Union[uuid.UUID, str]]:
+    """
+    Endpoint to accept a participant for a specific event.
+
+    Parameters:
+    - user_id (UUID, header): The unique identifier of the user (event creator).
+    - sessiontoken (str, header): The session token of the user.
+    - participant_id (UUID, header): The unique identifier of the participant.
+    - event_id (UUID, header): The unique identifier of the event.
+
+    Returns:
+    - dict: A dictionary containing:
+        - 'chat_id': The chat ID for the participant.
+        - 'message': A confirmation message.
+
+    Errors:
+    - 401 Unauthorized: If the authentication fails.
+    - 404 Not Found: If no participation request is found for the specified event and participant.
+    """
+    
+    logger.debug(f"Accepting participant with ID: {participant_id} for event with ID: {event_id} by user with ID: {user_id}.")
+
+    # Authenticate the user's session token
+    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    if not is_authenticated:
+        logger.warning(f"Authentication failed for user with ID: {user_id}.")
+        raise HTTPException(status_code=401, detail="Authentication failed.")
+
+    # Define the structure of the participation_requests table for reference
+    participation_requests = Table(
+        "participation_requests",
+        metadata,
+        Column("event_id", uuid.UUID, nullable=False),
+        Column("event_creator", uuid.UUID, nullable=False),
+        Column("request_participant", uuid.UUID, nullable=False),
+        Column("accepted_status", Boolean),
+        Column("chat_id", uuid.UUID),
+        # ... [rest of the columns]
+    )
+
+    # Update the accepted_status for the given participant_id and event_id
+    query = (
+        update(participation_requests)
+        .where(participation_requests.c.event_id == event_id)
+        .where(participation_requests.c.event_creator == user_id)
+        .where(participation_requests.c.request_participant == participant_id)
+        .values(accepted_status=True)
+        .returning(participation_requests.c.chat_id)
+    )
+
+    result = await app_db_database.fetch_one(query)
+
+    # Check if the participation request was found and updated
+    if not result:
+        logger.warning(f"No participation request found for participant with ID: {participant_id} for event with ID: {event_id}.")
+        raise HTTPException(status_code=404, detail="Participation request not found.")
+
+    chat_id = result["chat_id"]
+    await close_event(app_db_database, event_id)
+
+    logger.debug(f"Successfully accepted participant with ID: {participant_id} for event with ID: {event_id}.")
+
+    return {
+        "chat_id": chat_id,
+        "message": "Participant successfully accepted for the event."
+    }
+    
+
+@app.post("/remove_participant")
+async def remove_participant_endpoint(
+    remove_data: Dict[uuid.UUID, uuid.UUID] = Body(...),
+    user_id: uuid.UUID = Header(...),
+    sessiontoken: str = Header(...)
+) -> Dict[str, str]:
+    """
+    Endpoint to remove a participant from a specific event.
+
+    Parameters:
+    - remove_data (dict, body): A dictionary containing:
+        - 'event_id' (UUID): The unique identifier of the event.
+        - 'participant_id' (UUID): The unique identifier of the participant.
+    - user_id (UUID, header): The unique identifier of the user (event creator).
+    - sessiontoken (str, header): The session token of the user.
+
+    Returns:
+    - dict: A dictionary containing:
+        - 'message': A confirmation message.
+
+    Errors:
+    - 401 Unauthorized: If the authentication fails.
+    - 404 Not Found: If no participation request is found for the specified event and participant.
+    """
+    
+    logger.debug(f"Removing participant with ID: {remove_data['participant_id']} from event with ID: {remove_data['event_id']} by user with ID: {user_id}.")
+
+    # Authenticate the user's session token
+    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    if not is_authenticated:
+        logger.warning(f"Authentication failed for user with ID: {user_id}.")
+        raise HTTPException(status_code=401, detail="Authentication failed.")
+
+    # Define the structure of the participation_requests table for reference
+    participation_requests = Table(
+        "participation_requests",
+        metadata,
+        Column("event_id", uuid.UUID, nullable=False),
+        Column("event_creator", uuid.UUID, nullable=False),
+        Column("request_participant", uuid.UUID, nullable=False),
+        Column("accepted_status", Boolean),
+        Column("chat_id", uuid.UUID),
+        # ... [rest of the columns]
+    )
+
+    # Update the accepted_status for the given participant_id and event_id to False
+    query = (
+        update(participation_requests)
+        .where(participation_requests.c.event_id == remove_data['event_id'])
+        .where(participation_requests.c.event_creator == user_id)
+        .where(participation_requests.c.request_participant == remove_data['participant_id'])
+        .values(accepted_status=False)
+    )
+
+    result = await app_db_database.execute(query)
+
+    if not result:
+        logger.warning(f"No participation request found for participant with ID: {remove_data['participant_id']} for event with ID: {remove_data['event_id']}.")
+        raise HTTPException(status_code=404, detail="Participation request not found.")
+
+    logger.debug(f"Successfully removed participant with ID: {remove_data['participant_id']} from event with ID: {remove_data['event_id']}.")
+
+    return {
+        "message": "Participant successfully removed from the event."
+    }
+    
+
+@app.get("/read_chatblock")
+async def read_chatblock_endpoint(
+    chat_data: Dict[str, uuid.UUID] = Body(...),
+    user_id: uuid.UUID = Header(...),
+    sessiontoken: str = Header(...)
+) -> Dict[str, str]:
+    """
+    Endpoint to read the chat block associated with a given chat_id.
+
+    Parameters:
+    - chat_data (dict, body): A dictionary containing:
+        - 'chat_id' (UUID): The unique identifier of the chat.
+    - user_id (UUID, header): The unique identifier of the user (event creator or participant).
+    - sessiontoken (str, header): The session token of the user.
+
+    Returns:
+    - dict: A dictionary containing:
+        - 'chatblock': The chat block associated with the given chat_id.
+
+    Errors:
+    - 401 Unauthorized: If the authentication fails.
+    - 404 Not Found: If no chatblock is found for the specified chat_id and user_id.
+    """
+    
+    logger.debug(f"Fetching chat block for chat with ID: {chat_data['chat_id']} requested by user with ID: {user_id}.")
+
+    # Authenticate the user's session token
+    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    if not is_authenticated:
+        logger.warning(f"Authentication failed for user with ID: {user_id}.")
+        raise HTTPException(status_code=401, detail="Authentication failed.")
+
+    # Define the structure of the participation_requests table for reference
+    participation_requests = Table(
+        "participation_requests",
+        metadata,
+        Column("event_id", uuid.UUID, nullable=False),
+        Column("event_creator", uuid.UUID, nullable=False),
+        Column("request_participant", uuid.UUID, nullable=False),
+        Column("accepted_status", Boolean),
+        Column("chat_id", uuid.UUID),
+        Column("chat_block", String)
+    )
+
+    # Construct the select query
+    query = (
+        select([participation_requests.c.chat_block])
+        .where(
+            and_(
+                participation_requests.c.chat_id == chat_data['chat_id'],
+                or_(
+                    participation_requests.c.event_creator == user_id,
+                    participation_requests.c.request_participant == user_id
+                )
+            )
+        )
+    )
+
+    result = await app_db_database.fetch_one(query)
+
+    if not result:
+        logger.warning(f"No chatblock found for chat with ID: {chat_data['chat_id']}.")
+        raise HTTPException(status_code=404, detail="Chatblock not found.")
+
+    logger.debug(f"Successfully fetched chat block for chat with ID: {chat_data['chat_id']}.")
+
+    return {
+        "chatblock": result["chat_block"]
+    }
+    
+
+@app.post("/write_chatblock")
+async def write_chatblock_endpoint(
+    chat_data: Dict[uuid.UUID, str] = Body(...),
+    user_id: uuid.UUID = Header(...),
+    sessiontoken: str = Header(...)
+) -> Dict[str, str]:
+    """
+    Endpoint to write to the chat block associated with a given chat_id.
+
+    Parameters:
+    - chat_data (dict, body): A dictionary containing:
+        - 'chat_id' (UUID, key): The unique identifier of the chat.
+        - 'chat_block' (str, value): The content to be written to the chat block.
+    - user_id (UUID, header): The unique identifier of the user (event creator or participant).
+    - sessiontoken (str, header): The session token of the user.
+
+    Returns:
+    - dict: A dictionary containing a confirmation message.
+
+    Errors:
+    - 401 Unauthorized: If the authentication fails.
+    - 404 Not Found: If no chatblock is found for the specified chat_id and user_id.
+    """
+    
+    logger.debug(f"Writing to chat block for chat with ID: {list(chat_data.keys())[0]} requested by user with ID: {user_id}.")
+
+    # Authenticate the user's session token
+    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    if not is_authenticated:
+        logger.warning(f"Authentication failed for user with ID: {user_id}.")
+        raise HTTPException(status_code=401, detail="Authentication failed.")
+
+    # Define the structure of the participation_requests table for reference
+    participation_requests = Table(
+        "participation_requests",
+        metadata,
+        Column("event_id", uuid.UUID, nullable=False),
+        Column("event_creator", uuid.UUID, nullable=False),
+        Column("request_participant", uuid.UUID, nullable=False),
+        Column("accepted_status", Boolean),
+        Column("chat_id", uuid.UUID),
+        Column("chat_block", String)
+    )
+
+    # Construct the update query
+    chat_id = list(chat_data.keys())[0]
+    chat_block = chat_data[chat_id]
+    query = (
+        update(participation_requests)
+        .where(
+            and_(
+                participation_requests.c.chat_id == chat_id,
+                or_(
+                    participation_requests.c.event_creator == user_id,
+                    participation_requests.c.request_participant == user_id
+                )
+            )
+        )
+        .values(chat_block=chat_block)
+    )
+
+    result = await app_db_database.execute(query)
+
+    if not result:
+        logger.warning(f"Failed to write to chat block for chat with ID: {chat_id}.")
+        raise HTTPException(status_code=404, detail="Chatblock update failed.")
+
+    logger.debug(f"Successfully wrote to chat block for chat with ID: {chat_id}.")
+
+    return {
+        "message": "Chat block updated successfully."
+    }
+    
+    
+@app.get("/did_I_match")
+async def did_I_match_endpoint(
+    user_id: uuid.UUID = Header(...),
+    sessiontoken: str = Header(...)
+) -> Dict[str, List[uuid.UUID]]:
+    """
+    Endpoint to check if the user matched with any event.
+
+    Parameters:
+    - user_id (UUID, header): The unique identifier of the user.
+    - sessiontoken (str, header): The session token of the user.
+
+    Returns:
+    - dict: A dictionary containing lists of:
+        - 'event_id': Event IDs the user matched with.
+        - 'chat_id': Chat IDs associated with the matched events.
+        - 'event_creator': User IDs of the event creators of the matched events.
+
+    Errors:
+    - 401 Unauthorized: If the authentication fails.
+    """
+    
+    logger.debug(f"Checking matches for user with ID: {user_id}.")
+
+    # Authenticate the user's session token
+    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    if not is_authenticated:
+        logger.warning(f"Authentication failed for user with ID: {user_id}.")
+        raise HTTPException(status_code=401, detail="Authentication failed.")
+
+    # Define the structure of the events and participation_requests tables for reference
+    events = Table(
+        "events",
+        metadata,
+        Column("event_id", UUID, primary_key=True),
+        Column("activity_id", Integer, nullable=False),
+        Column("initiated_by", UUID, nullable=False),
+        Column("is_open", Boolean, nullable=False)
+    )
+
+    participation_requests = Table(
+        "participation_requests",
+        metadata,
+        Column("event_id", UUID, nullable=False),
+        Column("event_creator", UUID, nullable=False),
+        Column("request_participant", UUID, nullable=False),
+        Column("chat_id", UUID),
+        Column("chat_block", String)
+    )
+
+    # Construct the select query to retrieve the matched events
+    query = (
+        select([
+            participation_requests.c.event_id, 
+            participation_requests.c.chat_id, 
+            participation_requests.c.event_creator
+        ])
+        .select_from(
+            participation_requests.join(
+                events, 
+                participation_requests.c.event_id == events.c.event_id
+            )
+        )
+        .where(
+            and_(
+                participation_requests.c.request_participant == user_id,
+                events.c.is_open == True
+            )
+        )
+    )
+
+    results = await app_db_database.fetch_all(query)
+    
+    if not results:
+        logger.debug(f"No matches found for user with ID: {user_id}.")
+        return {
+            "event_id": [],
+            "chat_id": [],
+            "event_creator": [],
+        }
+
+    event_ids = [result["event_id"] for result in results]
+    chat_ids = [result["chat_id"] for result in results]
+    event_creators = [result["event_creator"] for result in results]
+
+    logger.debug(f"Successfully retrieved matches for user with ID: {user_id}.")
+
+    return {
+        "event_id": event_ids,
+        "chat_id": chat_ids,
+        "event_creator": event_creators
+    }
 
 # ========================================
 if __name__ == "__main__":
