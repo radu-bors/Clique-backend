@@ -423,7 +423,7 @@ from sqlalchemy import select, and_, func
 @app.post("/delete_event")
 async def close_event_endpoint(
     request_data: dict,
-    user_id: UUID = Header(...),
+    user_id: uuid.UUID = Header(...),
     sessiontoken: str = Header(...)
 ):
     """
@@ -480,7 +480,7 @@ async def close_event_endpoint(
 @app.get("/filter_events")
 async def filter_events_endpoint(
     filter_criteria: EventFilterCriteria,
-    user_id: UUID = Header(...),
+    user_id: uuid.UUID = Header(...),
     sessiontoken: str = Header(...)
 ) -> Dict[str, List]:
     """
@@ -572,12 +572,12 @@ async def filter_events_endpoint(
 
 from sqlalchemy import select, join
 
-@app.get("/get_event_details/{event_id}")
+@app.get("/get_event_details")
 async def get_event_details_endpoint(
-    event_id: UUID,
-    user_id: UUID = Header(...),
+    event_id: uuid.UUID = Query(...),
+    user_id: uuid.UUID = Header(...),
     sessiontoken: str = Header(...)
-) -> Dict[str, Union[str, UUID]]:
+) -> Dict[str, Union[str, uuid.UUID]]:
     """
     Endpoint to fetch details of a specific event.
 
@@ -650,12 +650,12 @@ async def get_event_details_endpoint(
     }
 
 
-@app.get("/get_event_details/{event_id}")
+@app.get("/get_event_details")
 async def get_event_details_endpoint(
-    event_id: UUID,
-    user_id: UUID = Header(...),
+    event_id: uuid.UUID = Query(...),
+    user_id: uuid.UUID = Header(...),
     sessiontoken: str = Header(...)
-) -> Dict[str, Union[str, UUID]]:
+) -> Dict[str, Union[str, uuid.UUID]]:
     """
     Endpoint to fetch details of a specific event.
 
@@ -727,10 +727,10 @@ async def get_event_details_endpoint(
     }
     
     
-@app.get("/get_user_details/{target_user_id}")
+@app.get("/get_user_details")
 async def get_user_details_endpoint(
-    target_user_id: UUID,
-    user_id: UUID = Header(...),
+    target_user_id: uuid.UUID = Query(...),
+    user_id: uuid.UUID = Header(...),
     sessiontoken: str = Header(...)
 ):
     """
@@ -802,10 +802,10 @@ async def get_user_details_endpoint(
 
 @app.get("/is_participant")
 async def is_participant_endpoint(
-    user_id: UUID = Header(...),
+    user_id: uuid.UUID = Header(...),
     sessiontoken: str = Header(...),
-    event_id: UUID = Header(...),
-    participant_id: UUID = Header(...)
+    event_id: uuid.UUID = Header(...),
+    participant_id: uuid.UUID = Header(...)
 ):
     """
     Determine if a user is a participant of a given event.
@@ -865,9 +865,9 @@ async def is_participant_endpoint(
 
 @app.post("/request_to_join_event")
 async def request_to_join_event_endpoint(
-    user_id: UUID = Header(...),
+    user_id: uuid.UUID = Header(...),
     sessiontoken: str = Header(...),
-    event_id: UUID = Header(...)
+    event_id: uuid.UUID = Header(...)
 ):
     """
     Request to join a specific event.

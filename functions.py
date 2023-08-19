@@ -1789,3 +1789,5 @@ async def get_user_location(db, user_id: UUID) -> str:
     
     logger.debug(f"Fetched location {location} for user with ID: {user_id}")
     return location
+
+
