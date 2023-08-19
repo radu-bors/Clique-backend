@@ -11,6 +11,12 @@ from typing import Optional, Dict, List, Union
 import uuid
 import hashlib
 import os
+import logging
+
+
+# creating logger for custom logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 metadata = MetaData()
 
@@ -1372,6 +1378,8 @@ async def authenticate_user(db: Database, email: str, hashed_password: str) -> L
       True and the corresponding user_id if a match is found, 
       False and None if no match is found.
     """
+    
+    logger.debug(f"Entering authenticate_user function for email: {email}.")
 
     # Define the structure of the users_auth table
     users_auth = Table(
@@ -1389,11 +1397,13 @@ async def authenticate_user(db: Database, email: str, hashed_password: str) -> L
     )
     
     result = await db.fetch_one(query)
-
-    if result:
-        return True, result["user_id"]
-    else:
+    
+    if not result:
+        logger.warning(f"No user found matching email: {email} and provided hashed_password.")
         return False, None
+
+    logger.debug(f"User with email: {email} authenticated successfully.")
+    return True, result["user_id"]
 
 
 async def generate_session_token(db: Database, email: str, password_str: str) -> List[Union[UUID, str]]:
@@ -1409,7 +1419,9 @@ async def generate_session_token(db: Database, email: str, password_str: str) ->
     - List[UUID, str]: The user_id and the generated session token.
     """
 
-    # 1. Search for user_id and salt based on email
+    logger.debug("Entering generate_session_token function.")
+    
+    # Search for user_id and salt based on email
     users_auth = Table(
         "users_auth",
         metadata,
@@ -1421,22 +1433,24 @@ async def generate_session_token(db: Database, email: str, password_str: str) ->
 
     query = select([users_auth.c.user_id, users_auth.c.salt]).where(users_auth.c.email == email)
     result = await db.fetch_one(query)
-
+    
     if not result:
+        logger.warning(f"No user found with email: {email}.")
         raise ValueError("Email not found.")
 
     user_id, salt = result["user_id"], result["salt"]
 
-    # 2. Generate hashed password
+    # Generate hashed password
     password_with_salt = (password_str + salt).encode('utf-8')
     hash_result = hashlib.sha256(password_with_salt).hexdigest()
 
-    # 3. Authenticate user using authenticate_user function
+    # Authenticate user using authenticate_user function
     auth_success, auth_user_id = await authenticate_user(db, email, hash_result)
     if not auth_success:
+        logger.warning(f"Authentication failed for email: {email}.")
         raise ValueError("Authentication failed.")
 
-    # 4. Generate an entry in the user_sessions table
+    # Generate an entry in the user_sessions table
     expiry_date = datetime.now() + timedelta(days=30)  # 1 month from now
     token = hashlib.sha256((email + str(datetime.now())).encode('utf-8')).hexdigest()
 
@@ -1452,7 +1466,8 @@ async def generate_session_token(db: Database, email: str, password_str: str) ->
     query = user_sessions.insert().values(user_id=user_id, token=token, expiry=expiry_date)
     await db.execute(query)
 
-    # 5. Return user_id and token
+    # Return user_id and token
+    logger.debug("Exiting generate_session_token function.")
     return user_id, token
 
 

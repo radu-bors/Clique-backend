@@ -19,7 +19,9 @@ app = FastAPI(
     version="1.0.1",
 )
 
+# creating logger for custom logging
 logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 # update the databases URLs
 APP_DB_DATABASE_URL = "postgresql://user:password@app_db:5432/app_db"
@@ -135,20 +137,26 @@ async def login_user(email: Optional[str] = Header(None), password: Optional[str
     - dict: A dictionary containing the user_id, session token, and a confirmation message.
     """
 
+    logger.debug("Entering login_user endpoint.")
+
     if not email or not password:
+        logger.warning("Email or password header missing.")
         raise HTTPException(status_code=400, detail="Email and password headers are required.")
     
     try:
-        # Call the generate_session_token function
+        logger.debug(f"Attempting to generate session token for email: {email}.")
         user_id, token = await generate_session_token(auth_db_database, email, password)
+        logger.debug("Session token generated successfully.")
         return {
             "user_id": user_id,
             "token": token,
             "message": "Login successful!"
         }
     except ValueError as ve:
+        logger.error(f"ValueError encountered: {ve}")
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
+        logger.error(f"Unexpected error: {e}")
         raise HTTPException(status_code=500, detail="Internal server error.")
 
 
