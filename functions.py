@@ -233,7 +233,7 @@ async def update_user_profile_photo_url(db: Database, user_id: UUID, profile_pho
         "users",
         metadata,
         Column("user_id", UUID, primary_key=True),
-        Column("profile_photo_url", TEXT),
+        Column("profile_photo_url", Text),
         extend_existing=True
     )
 
@@ -265,7 +265,7 @@ async def update_user_description(db: Database, user_id: UUID, description: str)
         "users",
         metadata,
         Column("user_id", UUID, primary_key=True),
-        Column("description", TEXT),
+        Column("description", Text),
         extend_existing=True
     )
 
@@ -361,7 +361,7 @@ async def update_user_first_name(db: Database, user_id: UUID, first_name: str):
         "users",
         metadata,
         Column("user_id", UUID, primary_key=True),
-        Column("first_name", TEXT, nullable=False),
+        Column("first_name", Text, nullable=False),
         extend_existing=True
     )
 
@@ -393,7 +393,7 @@ async def update_user_last_name(db: Database, user_id: UUID, last_name: str):
         "users",
         metadata,
         Column("user_id", UUID, primary_key=True),
-        Column("last_name", TEXT, nullable=False),
+        Column("last_name", Text, nullable=False),
         extend_existing=True
     )
 
@@ -425,7 +425,7 @@ async def update_user_middle_name(db: Database, user_id: UUID, middle_name: str)
         "users",
         metadata,
         Column("user_id", UUID, primary_key=True),
-        Column("middle_name", TEXT),
+        Column("middle_name", Text),
         extend_existing=True
     )
 
@@ -457,7 +457,7 @@ async def update_user_username(db: Database, user_id: UUID, username: str):
         "users",
         metadata,
         Column("user_id", UUID, primary_key=True),
-        Column("username", TEXT, nullable=False),
+        Column("username", Text, nullable=False),
         extend_existing=True
     )
 
@@ -489,7 +489,7 @@ async def update_user_email(db: Database, user_id: UUID, email: str):
         "users",
         metadata,
         Column("user_id", UUID, primary_key=True),
-        Column("email", TEXT, nullable=False, unique=True),
+        Column("email", Text, nullable=False, unique=True),
         extend_existing=True
     )
 
@@ -553,7 +553,7 @@ async def update_user_gender(db: Database, user_id: UUID, gender: str):
         "users",
         metadata,
         Column("user_id", UUID, primary_key=True),
-        Column("gender", TEXT, nullable=False),
+        Column("gender", Text, nullable=False),
         extend_existing=True
     )
 
@@ -586,7 +586,7 @@ async def get_user_first_name(db: Database, user_id: UUID) -> str:
         "users",
         metadata,
         Column("user_id", UUID, primary_key=True),
-        Column("first_name", TEXT, nullable=False),
+        Column("first_name", Text, nullable=False),
         extend_existing=True
     )
 
@@ -618,7 +618,7 @@ async def get_user_last_name(db: Database, user_id: UUID) -> str:
         "users",
         metadata,
         Column("user_id", UUID, primary_key=True),
-        Column("last_name", TEXT, nullable=False),
+        Column("last_name", Text, nullable=False),
         extend_existing=True
     )
 
@@ -650,7 +650,7 @@ async def get_user_middle_name(db: Database, user_id: UUID) -> Optional[str]:
         "users",
         metadata,
         Column("user_id", UUID, primary_key=True),
-        Column("middle_name", TEXT),
+        Column("middle_name", Text),
         extend_existing=True
     )
 
@@ -682,7 +682,7 @@ async def get_user_username(db: Database, user_id: UUID) -> str:
         "users",
         metadata,
         Column("user_id", UUID, primary_key=True),
-        Column("username", TEXT, nullable=False),
+        Column("username", Text, nullable=False),
         extend_existing=True
     )
 
@@ -714,7 +714,7 @@ async def get_user_email(db: Database, user_id: UUID) -> str:
         "users",
         metadata,
         Column("user_id", UUID, primary_key=True),
-        Column("email", TEXT, nullable=False, unique=True),
+        Column("email", Text, nullable=False, unique=True),
         extend_existing=True
     )
 
@@ -779,7 +779,7 @@ async def get_user_gender(db: Database, user_id: UUID) -> str:
         "users",
         metadata,
         Column("user_id", UUID, primary_key=True),
-        Column("gender", TEXT, nullable=False),
+        Column("gender", Text, nullable=False),
         extend_existing=True
     )
 
@@ -811,7 +811,7 @@ async def get_user_profile_photo_url(db: Database, user_id: UUID) -> Optional[st
         "users",
         metadata,
         Column("user_id", UUID, primary_key=True),
-        Column("profile_photo_url", TEXT),
+        Column("profile_photo_url", Text),
         extend_existing=True
     )
 
@@ -843,7 +843,7 @@ async def get_user_description(db: Database, user_id: UUID) -> Optional[str]:
         "users",
         metadata,
         Column("user_id", UUID, primary_key=True),
-        Column("description", TEXT),
+        Column("description", Text),
         extend_existing=True
     )
 
@@ -934,13 +934,13 @@ async def insert_event(db: Database, event_data: Dict) -> UUID:
         - activity_id (BIGINT): Reference to the associated activity.
         - initiated_by (UUID): Identifier for the user who initiated the event.
         - location (POINT): Geographical location of the event.
-        - address (TEXT, optional): Address related to the event.
+        - address (Text, optional): Address related to the event.
         - participant_min_age (INT): Minimum age for participants.
         - participant_max_age (INT): Maximum age for participants.
-        - participant_pref_genders (TEXT[]): Array of preferred genders for participants.
-        - description (TEXT): Description of the event.
+        - participant_pref_genders (Text[]): Array of preferred genders for participants.
+        - description (Text): Description of the event.
         - is_open (BOOLEAN): Indicates if the event is open for new participants.
-        - event_picture_url (TEXT, optional): URL for the event picture.
+        - event_picture_url (Text, optional): URL for the event picture.
         - event_date_time (TIMESTAMP): Timestamp for when the event will occur.
 
     Returns:
@@ -958,14 +958,14 @@ async def insert_event(db: Database, event_data: Dict) -> UUID:
         Column("activity_id", BIGINT, nullable=False),
         Column("initiated_by", UUID, nullable=False),
         Column("location", Text, nullable=False),
-        Column("address", TEXT),
+        Column("address", Text),
         Column("participant_min_age", INT, nullable=False),
         Column("participant_max_age", INT, nullable=False),
-        Column("participant_pref_genders", ARRAY(TEXT), nullable=False),
-        Column("description", TEXT, nullable=False),
+        Column("participant_pref_genders", ARRAY(Text), nullable=False),
+        Column("description", Text, nullable=False),
         Column("is_open", BOOLEAN, nullable=False),
         Column("initiated_on", TIMESTAMP, nullable=False),
-        Column("event_picture_url", TEXT),
+        Column("event_picture_url", Text),
         Column("event_date_time", TIMESTAMP),
         extend_existing=True
     )
@@ -1091,7 +1091,7 @@ async def get_event_address(db: Database, event_id: UUID) -> Optional[str]:
         "events",
         metadata,
         Column("event_id", UUID, primary_key=True),
-        Column("address", TEXT),
+        Column("address", Text),
         extend_existing=True
     )
 
@@ -1187,7 +1187,7 @@ async def get_event_participant_pref_genders(db: Database, event_id: UUID) -> Li
         "events",
         metadata,
         Column("event_id", UUID, primary_key=True),
-        Column("participant_pref_genders", ARRAY(TEXT), nullable=False),
+        Column("participant_pref_genders", ARRAY(Text), nullable=False),
         extend_existing=True
     )
 
@@ -1219,7 +1219,7 @@ async def get_event_description(db: Database, event_id: UUID) -> str:
         "events",
         metadata,
         Column("event_id", UUID, primary_key=True),
-        Column("description", TEXT, nullable=False),
+        Column("description", Text, nullable=False),
         extend_existing=True
     )
 
@@ -1316,7 +1316,7 @@ async def get_event_picture_url(db: Database, event_id: UUID) -> Optional[str]:
         "events",
         metadata,
         Column("event_id", UUID, primary_key=True),
-        Column("event_picture_url", TEXT),
+        Column("event_picture_url", Text),
         extend_existing=True
     )
 
@@ -1426,8 +1426,8 @@ async def generate_session_token(db: Database, email: str, password_str: str) ->
         "users_auth",
         metadata,
         Column("user_id", UUID, primary_key=True),
-        Column("email", TEXT, unique=True, nullable=False),
-        Column("salt", TEXT, nullable=False),
+        Column("email", Text, unique=True, nullable=False),
+        Column("salt", Text, nullable=False),
         extend_existing=True
     )
 
@@ -1458,7 +1458,7 @@ async def generate_session_token(db: Database, email: str, password_str: str) ->
         "user_sessions",
         metadata,
         Column("user_id", UUID),
-        Column("token", TEXT, unique=True, nullable=False),
+        Column("token", Text, unique=True, nullable=False),
         Column("expiry", TIMESTAMP, nullable=False),
         extend_existing=True
     )
