@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
 from datetime import datetime, timedelta
-from typing import Optional, Dict, List, Union
+from typing import Optional, Dict, List, Union, Any
 
 import uuid
 import hashlib

@@ -3,7 +3,7 @@ from databases import Database
 from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Boolean, TIMESTAMP, Text, select, and_, BIGINT, Integer, ARRAY, join, update, JSON, CheckConstraint, DateTime
 
 from sqlalchemy.dialects.postgresql import UUID
-from typing import Optional, Dict, List, Union
+from typing import Optional, Dict, List, Union, Any
 
 import logging
 import uuid
@@ -494,7 +494,7 @@ async def filter_events_endpoint(
     filter_criteria: EventFilterCriteria = Body(...),
     user_id: uuid.UUID = Header(...),
     sessiontoken: str = Header(...)
-) -> Dict[str, List]:
+) -> Dict[str, Any]:
     """
     Endpoint to filter events based on given criteria.
 
