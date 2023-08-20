@@ -707,10 +707,6 @@ async def get_user_details_endpoint(
         logger.warning(f"Authentication failed for user with ID: {user_id}.")
         raise HTTPException(status_code=401, detail="Authentication failed.")
     
-    # Convert the birthdate string to a date object
-    if user_data.birthdate:
-        user_data.birthdate = datetime.strptime(user_data.birthdate, '%Y-%m-%d').date()
-    
     # Partial definition of the `users` table
     users = Table(
         "users",
