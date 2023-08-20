@@ -204,6 +204,9 @@ async def update_user_location(db: Database, user_id: UUID, coordinates: List[fl
         Column("location", Text, nullable=False),
         extend_existing=True
     )
+    
+    # Convert the coordinates list to a string
+    location_str = ",".join(map(str, coordinates))
 
     # Update the location of the user in the users table
     query = update(users).where(users.c.user_id == user_id).values(location=coordinates)
