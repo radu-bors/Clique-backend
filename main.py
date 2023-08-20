@@ -164,7 +164,9 @@ async def login_user(email: Optional[str] = Header(None), password: Optional[str
 
 
 @app.post("/update_user_location")
-async def update_user_location_endpoint(user_id: uuid.UUID = Header(...), sessiontoken: str = Header(...), location: str = Header(...)):
+async def update_user_location_endpoint(user_id: uuid.UUID = Header(...),
+                                        sessiontoken: str = Header(...),
+                                        location: str = Header(...)):
     """
     Endpoint to update the location of a user and their open events.
     
