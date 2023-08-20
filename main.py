@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, Header, Body, Query
 from databases import Database
-from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Boolean, TIMESTAMP, Text, select, and_, BIGINT, Integer, ARRAY, join, update
+from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Boolean, TIMESTAMP, Text, select, and_, BIGINT, Integer, ARRAY, join, update, JSON, CheckConstraint, DateTime
+
 from sqlalchemy.dialects.postgresql import UUID
 from typing import Optional, Dict, List, Union
 
@@ -238,24 +239,24 @@ async def update_user_profile_endpoint(
         logger.warning(f"Authentication failed for user with ID: {user_id}.")
         raise HTTPException(status_code=401, detail="Authentication failed.")
     
-    # Define the structure of the users table for reference
+    # define struncture of the users table
     users = Table(
         "users",
         metadata,
         Column("user_id", UUID, primary_key=True),
-        Column("first_name", Text, nullable=False),
-        Column("last_name", Text, nullable=False),
-        Column("middle_name", Text),
-        Column("username", Text),
-        Column("email", Text, unique=True, nullable=False),
-        Column("birthdate", DATE, nullable=False),
-        Column("gender", Text, nullable=False),
+        Column("first_name", String, nullable=False),
+        Column("last_name", String, nullable=False),
+        Column("middle_name", String),
+        Column("username", String),
+        Column("email", String, unique=True, nullable=False),
+        Column("birthdate", Date, nullable=False),
+        Column("gender", String, nullable=False),
         Column("location", Text, nullable=False),
-        Column("profile_photo_url", Text),
-        Column("description", Text),
+        Column("profile_photo_url", String),
+        Column("description", String),
         Column("last_online", TIMESTAMP),
         Column("is_online", Boolean, default=False),
-        Column("social_media_links", JSONB),
+        Column("social_media_links", JSON),
         extend_existing=True
     )
 
