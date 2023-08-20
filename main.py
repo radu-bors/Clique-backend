@@ -239,6 +239,10 @@ async def update_user_profile_endpoint(
         logger.warning(f"Authentication failed for user with ID: {user_id}.")
         raise HTTPException(status_code=401, detail="Authentication failed.")
     
+    # Convert the birthdate string to a date object
+    if user_data.birthdate:
+        user_data.birthdate = datetime.strptime(user_data.birthdate, '%Y-%m-%d').date()
+    
     # define struncture of the users table
     users = Table(
         "users",
@@ -684,6 +688,10 @@ async def get_user_details_endpoint(
         logger.warning(f"Authentication failed for user with ID: {user_id}.")
         raise HTTPException(status_code=401, detail="Authentication failed.")
     
+    # Convert the birthdate string to a date object
+    if user_data.birthdate:
+        user_data.birthdate = datetime.strptime(user_data.birthdate, '%Y-%m-%d').date()
+    
     # Partial definition of the `users` table
     users = Table(
         "users",
@@ -692,7 +700,7 @@ async def get_user_details_endpoint(
         Column("first_name", Text, nullable=False),
         Column("last_name", Text, nullable=False),
         Column("middle_name", Text),
-        Column("birthdate", DATE, nullable=False),
+        Column("birthdate", Date, nullable=False),
         Column("location", Text, nullable=False),
         Column("profile_photo_url", Text),
         Column("last_online", TIMESTAMP)
