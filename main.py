@@ -191,12 +191,16 @@ async def update_user_location_endpoint(user_id: uuid.UUID = Header(...),
     await update_user_location(app_db_database, user_id, new_location_list)
     logger.debug(f"Updated location for user with ID: {user_id}.")
     
-    # Fetch events initiated by the user where is_open is True
+    # Define the structure of the events table for reference
     events = Table(
         "events",
         metadata,
+        Column("initiated_by", UUID, nullable=False),
+        Column("location", Text, nullable=False),
+        Column("is_open", Boolean, nullable=False),
         extend_existing=True
     )
+    
     query = events.select().where(and_(events.c.initiated_by == user_id, events.c.is_open == True))
     open_events = await app_db_database.fetch_all(query)
     
