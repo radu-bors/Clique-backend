@@ -179,7 +179,7 @@ async def update_user_location_endpoint(user_id: uuid.UUID = Header(...), sessio
     logger.debug(f"Attempting to update location for user with ID: {user_id}.")
     
     # Authenticate the user's session token
-    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    is_authenticated = await authenticate_session_token(auth_db_database, user_id, sessiontoken)
     if not is_authenticated:
         logger.warning(f"Authentication failed for user with ID: {user_id}.")
         raise HTTPException(status_code=401, detail="Authentication failed.")
@@ -227,7 +227,7 @@ async def update_user_profile_endpoint(
     logger.debug(f"Attempting to update profile for user with ID: {user_id}.")
     
     # Authenticate the user's session token
-    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    is_authenticated = await authenticate_session_token(auth_db_database, user_id, sessiontoken)
     if not is_authenticated:
         logger.warning(f"Authentication failed for user with ID: {user_id}.")
         raise HTTPException(status_code=401, detail="Authentication failed.")
@@ -372,7 +372,7 @@ async def update_event_endpoint(
     logger.debug(f"Attempting to update event with ID: {event_data['event_id']} by user with ID: {user_id}.")
     
     # Authenticate the user's session token
-    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    is_authenticated = await authenticate_session_token(auth_db_database, user_id, sessiontoken)
     if not is_authenticated:
         logger.warning(f"Authentication failed for user with ID: {user_id}.")
         raise HTTPException(status_code=401, detail="Authentication failed.")
@@ -455,7 +455,7 @@ async def close_event_endpoint(
     logger.debug(f"Attempting to close event with ID: {request_data['event_id']} by user with ID: {user_id}.")
     
     # Authenticate the user's session token
-    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    is_authenticated = await authenticate_session_token(auth_db_database, user_id, sessiontoken)
     if not is_authenticated:
         logger.warning(f"Authentication failed for user with ID: {user_id}.")
         raise HTTPException(status_code=401, detail="Authentication failed.")
@@ -508,7 +508,7 @@ async def filter_events_endpoint(
     logger.debug(f"Filtering events for user with ID: {user_id} based on provided criteria.")
 
     # Authenticate the user's session token
-    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    is_authenticated = await authenticate_session_token(auth_db_database, user_id, sessiontoken)
     if not is_authenticated:
         logger.warning(f"Authentication failed for user with ID: {user_id}.")
         raise HTTPException(status_code=401, detail="Authentication failed.")
@@ -570,8 +570,6 @@ async def filter_events_endpoint(
     }
 
 
-from sqlalchemy import select, join
-
 @app.get("/get_event_details")
 async def get_event_details_endpoint(
     event_id: uuid.UUID = Query(...),
@@ -603,85 +601,7 @@ async def get_event_details_endpoint(
     logger.debug(f"Fetching details for event with ID: {event_id} requested by user with ID: {user_id}.")
 
     # Authenticate the user's session token
-    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
-    if not is_authenticated:
-        logger.warning(f"Authentication failed for user with ID: {user_id}.")
-        raise HTTPException(status_code=401, detail="Authentication failed.")
-
-    # Define the structure of the events and activities tables for reference
-    events = Table(
-        "events",
-        metadata,
-        Column("event_id", UUID, primary_key=True),
-        Column("activity_id", BIGINT, nullable=False),
-        Column("initiated_by", UUID, nullable=False),
-        Column("description", Text, nullable=False),
-        # ... [other columns]
-    )
-
-    activities = Table(
-        "activities",
-        metadata,
-        Column("activity_id", BIGINT, primary_key=True),
-        Column("activity_name", Text, nullable=False),
-    )
-
-    # Join the tables on the activity_id and fetch event details
-    query = (
-        select([activities.c.activity_name, events.c.initiated_by, events.c.description])
-        .select_from(events.join(activities, events.c.activity_id == activities.c.activity_id))
-        .where(events.c.event_id == event_id)
-    )
-
-    result = await app_db_database.fetch_one(query)
-
-    # Check if the event was found
-    if not result:
-        logger.warning(f"Event with ID: {event_id} not found.")
-        raise HTTPException(status_code=404, detail="Event not found.")
-
-    logger.debug(f"Successfully fetched details for event with ID: {event_id}.")
-
-    return {
-        "activity_name": result.activity_name,
-        "initiator_id": result.initiated_by,
-        "event_description": result.description,
-        "message": "Event details fetched successfully."
-    }
-
-
-@app.get("/get_event_details")
-async def get_event_details_endpoint(
-    event_id: uuid.UUID = Query(...),
-    user_id: uuid.UUID = Header(...),
-    sessiontoken: str = Header(...)
-) -> Dict[str, Union[str, uuid.UUID]]:
-    """
-    Endpoint to fetch details of a specific event.
-
-    This endpoint retrieves the details of an event specified by its `event_id`.
-
-    Parameters:
-    - event_id (UUID, path): The unique identifier of the event.
-    - user_id (UUID, header): The unique identifier of the user.
-    - sessiontoken (str, header): The session token of the user.
-
-    Returns:
-    - dict: A dictionary containing:
-        - 'activity_name': The name of the activity associated with the event.
-        - 'initiator_id': The user ID of the event initiator.
-        - 'event_description': The description of the event.
-        - 'message': A confirmation message.
-
-    Errors:
-    - 401 Unauthorized: If the authentication fails.
-    - 404 Not Found: If the event with the specified ID does not exist.
-    """
-    
-    logger.debug(f"Fetching details for event with ID: {event_id} requested by user with ID: {user_id}.")
-
-    # Authenticate the user's session token
-    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    is_authenticated = await authenticate_session_token(auth_db_database, user_id, sessiontoken)
     if not is_authenticated:
         logger.warning(f"Authentication failed for user with ID: {user_id}.")
         raise HTTPException(status_code=401, detail="Authentication failed.")
@@ -752,7 +672,7 @@ async def get_user_details_endpoint(
     """
     
     # Authenticate the user's session token
-    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    is_authenticated = await authenticate_session_token(auth_db_database, user_id, sessiontoken)
     if not is_authenticated:
         logger.warning(f"Authentication failed for user with ID: {user_id}.")
         raise HTTPException(status_code=401, detail="Authentication failed.")
@@ -824,7 +744,7 @@ async def is_participant_endpoint(
     """
     
     # Authenticate the user's session token
-    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    is_authenticated = await authenticate_session_token(auth_db_database, user_id, sessiontoken)
     if not is_authenticated:
         logger.warning(f"Authentication failed for user with ID: {user_id}.")
         raise HTTPException(status_code=401, detail="Authentication failed.")
@@ -885,7 +805,7 @@ async def request_to_join_event_endpoint(
     """
     
     # Authenticate the user's session token
-    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    is_authenticated = await authenticate_session_token(auth_db_database, user_id, sessiontoken)
     if not is_authenticated:
         logger.warning(f"Authentication failed for user with ID: {user_id}.")
         raise HTTPException(status_code=401, detail="Authentication failed.")
@@ -965,7 +885,7 @@ async def get_incoming_requests_endpoint(
     logger.debug(f"Fetching incoming join requests for event with ID: {event_id} for user with ID: {user_id}.")
 
     # Authenticate the user's session token
-    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    is_authenticated = await authenticate_session_token(auth_db_database, user_id, sessiontoken)
     if not is_authenticated:
         logger.warning(f"Authentication failed for user with ID: {user_id}.")
         raise HTTPException(status_code=401, detail="Authentication failed.")
@@ -1035,7 +955,7 @@ async def accept_participant_endpoint(
     logger.debug(f"Accepting participant with ID: {participant_id} for event with ID: {event_id} by user with ID: {user_id}.")
 
     # Authenticate the user's session token
-    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    is_authenticated = await authenticate_session_token(auth_db_database, user_id, sessiontoken)
     if not is_authenticated:
         logger.warning(f"Authentication failed for user with ID: {user_id}.")
         raise HTTPException(status_code=401, detail="Authentication failed.")
@@ -1108,7 +1028,7 @@ async def remove_participant_endpoint(
     logger.debug(f"Removing participant with ID: {remove_data['participant_id']} from event with ID: {remove_data['event_id']} by user with ID: {user_id}.")
 
     # Authenticate the user's session token
-    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    is_authenticated = await authenticate_session_token(auth_db_database, user_id, sessiontoken)
     if not is_authenticated:
         logger.warning(f"Authentication failed for user with ID: {user_id}.")
         raise HTTPException(status_code=401, detail="Authentication failed.")
@@ -1174,7 +1094,7 @@ async def read_chatblock_endpoint(
     logger.debug(f"Fetching chat block for chat with ID: {chat_data['chat_id']} requested by user with ID: {user_id}.")
 
     # Authenticate the user's session token
-    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    is_authenticated = await authenticate_session_token(auth_db_database, user_id, sessiontoken)
     if not is_authenticated:
         logger.warning(f"Authentication failed for user with ID: {user_id}.")
         raise HTTPException(status_code=401, detail="Authentication failed.")
@@ -1245,7 +1165,7 @@ async def write_chatblock_endpoint(
     logger.debug(f"Writing to chat block for chat with ID: {list(chat_data.keys())[0]} requested by user with ID: {user_id}.")
 
     # Authenticate the user's session token
-    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    is_authenticated = await authenticate_session_token(auth_db_database, user_id, sessiontoken)
     if not is_authenticated:
         logger.warning(f"Authentication failed for user with ID: {user_id}.")
         raise HTTPException(status_code=401, detail="Authentication failed.")
@@ -1317,7 +1237,7 @@ async def did_I_match_endpoint(
     logger.debug(f"Checking matches for user with ID: {user_id}.")
 
     # Authenticate the user's session token
-    is_authenticated = await authenticate_session_token(app_db_database, user_id, sessiontoken)
+    is_authenticated = await authenticate_session_token(auth_db_database, user_id, sessiontoken)
     if not is_authenticated:
         logger.warning(f"Authentication failed for user with ID: {user_id}.")
         raise HTTPException(status_code=401, detail="Authentication failed.")
