@@ -332,7 +332,7 @@ async def create_event_endpoint(
 
     # Modify the event_dict with other required attributes.
     event_dict["initiated_by"] = user_id
-    event_dict["location"] = [0, 0]  # Setting the location coordinates to [0, 0].
+    event_dict["location"] = [52.542079, 13.354979]  # Setting the location coordinates to [0, 0].
 
     # Validate and convert the modified event_dict to an Event instance
     event = Event(**event_dict)
@@ -1113,7 +1113,7 @@ async def read_chatblock_endpoint(
     chat_data: Dict[str, uuid.UUID] = Body(...),
     user_id: uuid.UUID = Header(...),
     sessiontoken: str = Header(...)
-) -> Dict[str, str]:
+) -> Dict[str, Any]:
     """
     Endpoint to read the chat block associated with a given chat_id.
 
