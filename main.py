@@ -313,9 +313,11 @@ async def create_event_endpoint(
     - 500 Internal Server Error: If there's an issue inserting the data into the database.
     """
     
-    # Authenticate the user using the provided user_id and sessiontoken.
-    if not await authenticate_user(user_id, sessiontoken):
-        raise HTTPException(status_code=401, detail="User authentication failed.")
+    # Authenticate the user's session token
+    is_authenticated = await authenticate_session_token(auth_db_database, user_id, sessiontoken)
+    if not is_authenticated:
+        logger.warning(f"Authentication failed for user with ID: {user_id}.")
+        raise HTTPException(status_code=401, detail="Authentication failed.")
     
     # Extract the activity_name from the dictionary and fetch its corresponding activity_id.
     activity_name = event_dict.pop("activity_name", None)  # Extract and remove activity_name from event_dict
