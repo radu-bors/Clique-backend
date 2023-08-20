@@ -714,13 +714,19 @@ async def get_user_details_endpoint(
         "users",
         metadata,
         Column("user_id", UUID, primary_key=True),
-        Column("first_name", Text, nullable=False),
-        Column("last_name", Text, nullable=False),
-        Column("middle_name", Text),
+        Column("first_name", String, nullable=False),
+        Column("last_name", String, nullable=False),
+        Column("middle_name", String),
+        Column("username", String),
+        Column("email", String, unique=True, nullable=False),
         Column("birthdate", Date, nullable=False),
+        Column("gender", String, nullable=False),
         Column("location", Text, nullable=False),
-        Column("profile_photo_url", Text),
+        Column("profile_photo_url", String),
+        Column("description", String),
         Column("last_online", TIMESTAMP),
+        Column("is_online", Boolean, default=False),
+        Column("social_media_links", JSON),
         extend_existing=True
     )
 
