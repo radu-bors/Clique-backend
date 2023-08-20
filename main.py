@@ -275,7 +275,7 @@ async def update_user_profile_endpoint(
 
 @app.post("/create_event")
 async def create_event_endpoint(
-        event_dict: dict,  # Change this to receive a dictionary
+        event_dict: dict = Body(...),
         user_id: uuid.UUID = Header(...), 
         sessiontoken: str = Header(...)
     ):
@@ -300,7 +300,6 @@ async def create_event_endpoint(
      -H "user_id: some-uuid" \
      -H "sessiontoken: some-token" \
      -d '{"activity_name": "some name",
-          "location": [40.7128, -74.0060],
           "participant_min_age": 18,
           "participant_max_age": 30,
           "participant_pref_genders": ["male", "female"],
@@ -346,7 +345,7 @@ async def create_event_endpoint(
 
 @app.post("/update_event")
 async def update_event_endpoint(
-    event_data: dict,
+    event_data: dict = Body(...),
     user_id: uuid.UUID = Header(...),
     sessiontoken: str = Header(...),
 ):
@@ -435,7 +434,7 @@ from sqlalchemy import select, and_, func
 
 @app.post("/delete_event")
 async def close_event_endpoint(
-    request_data: dict,
+    request_data: dict = Body(...),
     user_id: uuid.UUID = Header(...),
     sessiontoken: str = Header(...)
 ):
@@ -492,7 +491,7 @@ async def close_event_endpoint(
 
 @app.get("/filter_events")
 async def filter_events_endpoint(
-    filter_criteria: EventFilterCriteria,
+    filter_criteria: EventFilterCriteria = Body(...),
     user_id: uuid.UUID = Header(...),
     sessiontoken: str = Header(...)
 ) -> Dict[str, List]:
