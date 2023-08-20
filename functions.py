@@ -1646,7 +1646,8 @@ async def close_event(db: Database, event_id: uuid.UUID) -> None:
     )
     result = await db.execute(query)
 
-    if not result:
+    # Check the number of rows affected
+    if result == 0:
         logger.error(f"No event found with ID: {event_id}.")
         raise ValueError(f"No event found with ID: {event_id}.")
     
