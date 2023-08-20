@@ -474,7 +474,22 @@ async def close_event_endpoint(
     
     # Check if the event_id corresponds to the user_id in the events table
     events = Table(
-        # ... [rest of the events table definition as provided earlier]
+        "events",
+        metadata,
+        Column("event_id", UUID, primary_key=True),
+        Column("activity_id", BIGINT, nullable=False),
+        Column("initiated_by", UUID, nullable=False),
+        Column("location", Text, nullable=False),
+        Column("address", Text),
+        Column("participant_min_age", Integer, nullable=False),
+        Column("participant_max_age", Integer, nullable=False),
+        Column("participant_pref_genders", ARRAY(String), nullable=False),
+        Column("description", Text, nullable=False),
+        Column("is_open", Boolean, nullable=False),
+        Column("initiated_on", TIMESTAMP, nullable=False),
+        Column("event_picture_url", Text),
+        Column("event_date_time", TIMESTAMP),
+        extend_existing=True
     )
     event_query = select([events.c.initiated_by]).where(events.c.event_id == request_data['event_id'])
     event_initiator = await app_db_database.fetch_one(event_query)
@@ -626,14 +641,16 @@ async def get_event_details_endpoint(
         Column("event_id", UUID, primary_key=True),
         Column("activity_id", BIGINT, nullable=False),
         Column("initiated_by", UUID, nullable=False),
-        Column("description", Text, nullable=False)
+        Column("description", Text, nullable=False),
+        extend_existing=True
     )
 
     activities = Table(
         "activities",
         metadata,
         Column("activity_id", BIGINT, primary_key=True),
-        Column("activity_name", Text, nullable=False)
+        Column("activity_name", Text, nullable=False),
+        extend_existing=True
     )
 
     # Join the tables on the activity_id and fetch event details
@@ -705,7 +722,8 @@ async def get_user_details_endpoint(
         Column("birthdate", Date, nullable=False),
         Column("location", Text, nullable=False),
         Column("profile_photo_url", Text),
-        Column("last_online", TIMESTAMP)
+        Column("last_online", TIMESTAMP),
+        extend_existing=True
     )
 
     # Fetch the user details
@@ -775,8 +793,8 @@ async def is_participant_endpoint(
         Column("request_participant", UUID),
         Column("accepted_status", Boolean),
         Column("chat_id", UUID),
-        Column("chat_block", Text)
-        # ... other columns can be added as needed
+        Column("chat_block", Text),
+        extend_existing=True
     )
     
     # Query to check if the participant_id is a participant of the event_id
@@ -833,6 +851,7 @@ async def request_to_join_event_endpoint(
         metadata,
         Column("event_id", UUID, primary_key=True),
         Column("initiated_by", UUID),
+        extend_existing=True
     )
 
     # Define the structure of the participation_requests table
@@ -844,7 +863,8 @@ async def request_to_join_event_endpoint(
         Column("request_participant", UUID),
         Column("accepted_status", Boolean),
         Column("chat_id", UUID),
-        Column("chat_block", Text)
+        Column("chat_block", Text),
+        extend_existing=True
     )
     
     # Search for the event's creator
@@ -914,7 +934,7 @@ async def get_incoming_requests_endpoint(
         Column("event_id", uuid.UUID, nullable=False),
         Column("event_creator", uuid.UUID, nullable=False),
         Column("request_participant", uuid.UUID, nullable=False),
-        # ... [rest of the columns]
+        extend_existing=True
     )
 
     # Query to fetch all participation requests for the given event_id and user_id (event creator)
@@ -986,7 +1006,7 @@ async def accept_participant_endpoint(
         Column("request_participant", uuid.UUID, nullable=False),
         Column("accepted_status", Boolean),
         Column("chat_id", uuid.UUID),
-        # ... [rest of the columns]
+        extend_existing=True
     )
 
     # Update the accepted_status for the given participant_id and event_id
@@ -1059,7 +1079,7 @@ async def remove_participant_endpoint(
         Column("request_participant", uuid.UUID, nullable=False),
         Column("accepted_status", Boolean),
         Column("chat_id", uuid.UUID),
-        # ... [rest of the columns]
+        extend_existing=True
     )
 
     # Update the accepted_status for the given participant_id and event_id to False
@@ -1125,7 +1145,8 @@ async def read_chatblock_endpoint(
         Column("request_participant", uuid.UUID, nullable=False),
         Column("accepted_status", Boolean),
         Column("chat_id", uuid.UUID),
-        Column("chat_block", String)
+        Column("chat_block", String),
+        extend_existing=True
     )
 
     # Construct the select query
@@ -1196,7 +1217,8 @@ async def write_chatblock_endpoint(
         Column("request_participant", uuid.UUID, nullable=False),
         Column("accepted_status", Boolean),
         Column("chat_id", uuid.UUID),
-        Column("chat_block", String)
+        Column("chat_block", String),
+        extend_existing=True
     )
 
     # Construct the update query
@@ -1266,7 +1288,8 @@ async def did_I_match_endpoint(
         Column("event_id", UUID, primary_key=True),
         Column("activity_id", Integer, nullable=False),
         Column("initiated_by", UUID, nullable=False),
-        Column("is_open", Boolean, nullable=False)
+        Column("is_open", Boolean, nullable=False),
+        extend_existing=True
     )
 
     participation_requests = Table(
@@ -1276,7 +1299,8 @@ async def did_I_match_endpoint(
         Column("event_creator", UUID, nullable=False),
         Column("request_participant", UUID, nullable=False),
         Column("chat_id", UUID),
-        Column("chat_block", String)
+        Column("chat_block", String),
+        extend_existing=True
     )
 
     # Construct the select query to retrieve the matched events
