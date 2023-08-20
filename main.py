@@ -206,9 +206,9 @@ async def update_user_location_endpoint(user_id: uuid.UUID = Header(...),
     #open_events = await app_db_database.fetch_all(query)
     
     # Update location for each open event
-    for event in open_events:
-        await update_event_location(app_db_database, event["event_id"], new_location_list)
-        logger.debug(f"Updated location for event with ID: {event['event_id']}.")
+    #for event in open_events:
+    #    await update_event_location(app_db_database, event["event_id"], new_location_list)
+    #    logger.debug(f"Updated location for event with ID: {event['event_id']}.")
     
     return {"message": "Location updated successfully for user and their open events."}
 
