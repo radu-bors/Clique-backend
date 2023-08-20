@@ -1559,9 +1559,6 @@ async def update_event_location(db: Database, event_id: UUID, new_location: List
         raise e  # Re-raise the exception after logging
 
 
-
-
-
 async def get_activity_id(db: Database, activity_name: str) -> int:
     """
     Fetch the activity_id corresponding to a given activity_name from the activities table.
@@ -1579,7 +1576,8 @@ async def get_activity_id(db: Database, activity_name: str) -> int:
         "activities",
         metadata,
         Column("activity_name", String, unique=True, nullable=False),
-        Column("activity_id", BIGINT, primary_key=True)
+        Column("activity_id", BIGINT, primary_key=True),
+        extend_existing=True
     )
     
     # Log the attempt to fetch the activity_id.
