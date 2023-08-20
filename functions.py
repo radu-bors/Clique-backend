@@ -1720,7 +1720,7 @@ async def get_user_location(db, user_id: UUID) -> str:
         metadata,
         Column("user_id", UUID, primary_key=True),
         Column("location", String, nullable=False),
-        # ... [rest of the columns]
+        extend_existing=True
     )
     
     logger.info(f"Attempting to fetch location for user with ID: {user_id}")
