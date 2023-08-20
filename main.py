@@ -3,6 +3,8 @@ from databases import Database
 from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Boolean, TIMESTAMP, Text, select, and_, BIGINT, Integer, ARRAY, join, update, JSON, CheckConstraint, DateTime
 
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import POINT
+
 from typing import Optional, Dict, List, Union
 
 import logging
@@ -197,7 +199,7 @@ async def update_user_location_endpoint(user_id: uuid.UUID = Header(...),
         "events",
         metadata,
         Column("initiated_by", UUID, nullable=False),
-        Column("location", Text, nullable=False),
+        Column("location", POINT, nullable=False),
         Column("is_open", Boolean, nullable=False),
         extend_existing=True
     )

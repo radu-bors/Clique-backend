@@ -3,6 +3,8 @@ from databases import Database
 from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Boolean, TIMESTAMP, Text, select, and_, BIGINT, Integer, ARRAY, join, update, JSON, CheckConstraint, DateTime
 
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import POINT
+
 from sqlalchemy.sql import func
 
 from datetime import datetime, timedelta
@@ -201,15 +203,15 @@ async def update_user_location(db: Database, user_id: UUID, coordinates: List[fl
         "users",
         metadata,
         Column("user_id", UUID, primary_key=True),
-        Column("location", Text, nullable=False),
+        Column("location", POINT, nullable=False),
         extend_existing=True
     )
-    
-    # Convert the coordinates list to a string
-    location_str = ",".join(map(str, coordinates))
 
+    # Convert the coordinates list to a POINT representation
+    point_representation = f"POINT({coordinates[0]} {coordinates[1]})"
+    
     # Update the location of the user in the users table
-    query = update(users).where(users.c.user_id == user_id).values(location=coordinates)
+    query = update(users).where(users.c.user_id == user_id).values(location=point_representation)
     
     await db.execute(query)
 
