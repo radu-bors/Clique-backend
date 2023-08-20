@@ -547,7 +547,8 @@ async def filter_events_endpoint(
         Column("is_open", Boolean, nullable=False),
         Column("initiated_on", TIMESTAMP, nullable=False),
         Column("event_picture_url", Text),
-        Column("event_date_time", TIMESTAMP)
+        Column("event_date_time", TIMESTAMP),
+        extend_existing=True
     )
 
     # Query to fetch events based on activity IDs
