@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, Header
 from databases import Database
-from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Boolean, TIMESTAMP, Text, CheckConstraint, JSON, select, and_, DateTime, BIGINT, Integer, ARRAY, update
+from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Boolean, TIMESTAMP, Text, select, and_, BIGINT, Integer, ARRAY, join, update, JSON, CheckConstraint, DateTime, insert, or_
 
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
