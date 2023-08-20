@@ -603,7 +603,7 @@ async def get_event_details_endpoint(
     event_id: uuid.UUID = Query(...),
     user_id: uuid.UUID = Header(...),
     sessiontoken: str = Header(...)
-) -> Dict[str, Union[str, uuid.UUID]]:
+) -> Dict[str, Any]:
     """
     Endpoint to fetch details of a specific event.
 
@@ -682,7 +682,7 @@ async def get_user_details_endpoint(
     target_user_id: uuid.UUID = Query(...),
     user_id: uuid.UUID = Header(...),
     sessiontoken: str = Header(...)
-):
+) -> Dict[str, Any]:
     """
     Retrieve the details of a user.
 
@@ -700,6 +700,8 @@ async def get_user_details_endpoint(
     - 401 Unauthorized: If the authentication fails.
     - 404 Not Found: If the `target_user_id` does not correspond to any user in the database.
     """
+    
+    logger.debug(f"Fetching details for user with ID: {target_user_id} requested by user with ID: {user_id}.")
     
     # Authenticate the user's session token
     is_authenticated = await authenticate_session_token(auth_db_database, user_id, sessiontoken)
@@ -1100,7 +1102,7 @@ async def remove_participant_endpoint(
     }
     
 
-@app.get("/read_chatblock")
+@app.post("/read_chatblock")
 async def read_chatblock_endpoint(
     chat_data: Dict[str, uuid.UUID] = Body(...),
     user_id: uuid.UUID = Header(...),
