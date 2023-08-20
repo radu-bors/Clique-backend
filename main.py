@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, Header, Body, Query
 from databases import Database
-from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Boolean, TIMESTAMP, Text, select, and_, BIGINT, Integer, ARRAY, join, update, JSON, CheckConstraint, DateTime
+from sqlalchemy import create_engine, MetaData, Table, Column, String, Date, Boolean, TIMESTAMP, Text, select, and_, BIGINT, Integer, ARRAY, join, update, JSON, CheckConstraint, DateTime, insert
 
 from sqlalchemy.dialects.postgresql import UUID
 from typing import Optional, Dict, List, Union, Any
@@ -927,9 +927,9 @@ async def get_incoming_requests_endpoint(
     participation_requests = Table(
         "participation_requests",
         metadata,
-        Column("event_id", uuid.UUID, nullable=False),
-        Column("event_creator", uuid.UUID, nullable=False),
-        Column("request_participant", uuid.UUID, nullable=False),
+        Column("event_id", UUID, nullable=False),
+        Column("event_creator", UUID, nullable=False),
+        Column("request_participant", UUID, nullable=False),
         extend_existing=True
     )
 
@@ -997,11 +997,11 @@ async def accept_participant_endpoint(
     participation_requests = Table(
         "participation_requests",
         metadata,
-        Column("event_id", uuid.UUID, nullable=False),
-        Column("event_creator", uuid.UUID, nullable=False),
-        Column("request_participant", uuid.UUID, nullable=False),
+        Column("event_id", UUID, nullable=False),
+        Column("event_creator", UUID, nullable=False),
+        Column("request_participant", UUID, nullable=False),
         Column("accepted_status", Boolean),
-        Column("chat_id", uuid.UUID),
+        Column("chat_id", UUID),
         extend_existing=True
     )
 
@@ -1070,11 +1070,11 @@ async def remove_participant_endpoint(
     participation_requests = Table(
         "participation_requests",
         metadata,
-        Column("event_id", uuid.UUID, nullable=False),
-        Column("event_creator", uuid.UUID, nullable=False),
-        Column("request_participant", uuid.UUID, nullable=False),
+        Column("event_id", UUID, nullable=False),
+        Column("event_creator", UUID, nullable=False),
+        Column("request_participant", UUID, nullable=False),
         Column("accepted_status", Boolean),
-        Column("chat_id", uuid.UUID),
+        Column("chat_id", UUID),
         extend_existing=True
     )
 
@@ -1136,11 +1136,11 @@ async def read_chatblock_endpoint(
     participation_requests = Table(
         "participation_requests",
         metadata,
-        Column("event_id", uuid.UUID, nullable=False),
-        Column("event_creator", uuid.UUID, nullable=False),
-        Column("request_participant", uuid.UUID, nullable=False),
+        Column("event_id", UUID, nullable=False),
+        Column("event_creator", UUID, nullable=False),
+        Column("request_participant", UUID, nullable=False),
         Column("accepted_status", Boolean),
-        Column("chat_id", uuid.UUID),
+        Column("chat_id", UUID),
         Column("chat_block", String),
         extend_existing=True
     )
@@ -1208,11 +1208,11 @@ async def write_chatblock_endpoint(
     participation_requests = Table(
         "participation_requests",
         metadata,
-        Column("event_id", uuid.UUID, nullable=False),
-        Column("event_creator", uuid.UUID, nullable=False),
-        Column("request_participant", uuid.UUID, nullable=False),
+        Column("event_id", UUID, nullable=False),
+        Column("event_creator", UUID, nullable=False),
+        Column("request_participant", UUID, nullable=False),
         Column("accepted_status", Boolean),
-        Column("chat_id", uuid.UUID),
+        Column("chat_id", UUID),
         Column("chat_block", String),
         extend_existing=True
     )
