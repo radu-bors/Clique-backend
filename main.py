@@ -202,8 +202,8 @@ async def update_user_location_endpoint(user_id: uuid.UUID = Header(...),
         extend_existing=True
     )
     
-    query = events.select().where(and_(events.c.initiated_by == user_id, events.c.is_open == True))
-    open_events = await app_db_database.fetch_all(query)
+    #query = events.select().where(and_(events.c.initiated_by == user_id, events.c.is_open == True))
+    #open_events = await app_db_database.fetch_all(query)
     
     # Update location for each open event
     for event in open_events:

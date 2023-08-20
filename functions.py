@@ -923,7 +923,7 @@ async def get_user_social_media_links(db: Database, user_id: UUID) -> dict:
     return result["social_media_links"]
 
 
-async def insert_event(db: Database, event_data: Dict) -> UUID:
+async def insert_event(db: Database, event_data: Dict):
     """
     Inserts a new event into the events table in the app_db database.
 
@@ -931,26 +931,29 @@ async def insert_event(db: Database, event_data: Dict) -> UUID:
     - db: The database connection.
     - event_data (dict): A dictionary containing event data with the following keys:
         - event_id (UUID): Unique identifier for the event.
-        - activity_id (BIGINT): Reference to the associated activity.
-        - initiated_by (UUID): Identifier for the user who initiated the event.
-        - location (POINT): Geographical location of the event.
-        - address (Text, optional): Address related to the event.
+        - activity_id (BIGINT): Identifier for the activity.
+        - initiated_by (UUID): Identifier for the user initiating the event.
+        - location (POINT): Geographical point representing event's location.
+        - address (Text, optional): Address where the event is taking place.
         - participant_min_age (INT): Minimum age for participants.
         - participant_max_age (INT): Maximum age for participants.
-        - participant_pref_genders (Text[]): Array of preferred genders for participants.
-        - description (Text): Description of the event.
-        - is_open (BOOLEAN): Indicates if the event is open for new participants.
-        - event_picture_url (Text, optional): URL for the event picture.
-        - event_date_time (TIMESTAMP): Timestamp for when the event will occur.
+        - participant_pref_genders (TEXT[]): Preferred genders for participants.
+        - description (TEXT): Description of the event.
+        - event_picture_url (Text, optional): URL to the event's picture.
+        - event_date_time (TIMESTAMP, optional): Timestamp of when the event will take place.
 
     Returns:
     - The event_id of the inserted event.
     """
-
-    # Set the initiated_on field to the current timestamp
-    event_data["initiated_on"] = datetime.now()
-
-    # Define the structure of the events table
+    
+    # Auto-generate the initiated_on timestamp
+    initiated_on_timestamp = datetime.now()
+    event_data["initiated_on"] = initiated_on_timestamp
+    
+    # Open event
+    event_data["is_open"] = True
+    
+    # Define structure of the events table
     events = Table(
         "events",
         metadata,
@@ -959,21 +962,24 @@ async def insert_event(db: Database, event_data: Dict) -> UUID:
         Column("initiated_by", UUID, nullable=False),
         Column("location", Text, nullable=False),
         Column("address", Text),
-        Column("participant_min_age", INT, nullable=False),
-        Column("participant_max_age", INT, nullable=False),
-        Column("participant_pref_genders", ARRAY(Text), nullable=False),
+        Column("participant_min_age", Integer, nullable=False),
+        Column("participant_max_age", Integer, nullable=False),
+        Column("participant_pref_genders", ARRAY(String), nullable=False),
         Column("description", Text, nullable=False),
-        Column("is_open", BOOLEAN, nullable=False),
+        Column("is_open", Boolean, nullable=False),
         Column("initiated_on", TIMESTAMP, nullable=False),
         Column("event_picture_url", Text),
         Column("event_date_time", TIMESTAMP),
         extend_existing=True
     )
-
-    # Construct the insert query
+    
     query = events.insert().values(**event_data)
     
-    return await db.execute(query)
+    logger.debug(f"Inserting event with ID: {event_data['event_id']}.")
+    result = await db.execute(query)
+    logger.info(f"Successfully inserted event with ID: {event_data['event_id']}.")
+    
+    return result
 
 
 async def get_event_activity_id(db: Database, event_id: UUID) -> int:
@@ -1553,63 +1559,7 @@ async def update_event_location(db: Database, event_id: UUID, new_location: List
         raise e  # Re-raise the exception after logging
 
 
-async def insert_event(db: Database, event_data: Dict):
-    """
-    Inserts a new event into the events table in the app_db database.
 
-    Parameters:
-    - db: The database connection.
-    - event_data (dict): A dictionary containing event data with the following keys:
-        - event_id (UUID): Unique identifier for the event.
-        - activity_id (BIGINT): Identifier for the activity.
-        - initiated_by (UUID): Identifier for the user initiating the event.
-        - location (POINT): Geographical point representing event's location.
-        - address (Text, optional): Address where the event is taking place.
-        - participant_min_age (INT): Minimum age for participants.
-        - participant_max_age (INT): Maximum age for participants.
-        - participant_pref_genders (TEXT[]): Preferred genders for participants.
-        - description (TEXT): Description of the event.
-        - event_picture_url (Text, optional): URL to the event's picture.
-        - event_date_time (TIMESTAMP, optional): Timestamp of when the event will take place.
-
-    Returns:
-    - The event_id of the inserted event.
-    """
-    
-    # Auto-generate the initiated_on timestamp
-    initiated_on_timestamp = datetime.now()
-    event_data["initiated_on"] = initiated_on_timestamp
-    
-    # Open event
-    event_data["is_open"] = True
-    
-    # Define structure of the events table
-    events = Table(
-        "events",
-        metadata,
-        Column("event_id", UUID, primary_key=True),
-        Column("activity_id", BIGINT, nullable=False),
-        Column("initiated_by", UUID, nullable=False),
-        Column("location", Text, nullable=False),
-        Column("address", Text),
-        Column("participant_min_age", Integer, nullable=False),
-        Column("participant_max_age", Integer, nullable=False),
-        Column("participant_pref_genders", ARRAY(String), nullable=False),
-        Column("description", Text, nullable=False),
-        Column("is_open", Boolean, nullable=False),
-        Column("initiated_on", TIMESTAMP, nullable=False),
-        Column("event_picture_url", Text),
-        Column("event_date_time", TIMESTAMP),
-        extend_existing=True
-    )
-    
-    query = events.insert().values(**event_data)
-    
-    logger.debug(f"Inserting event with ID: {event_data['event_id']}.")
-    result = await db.execute(query)
-    logger.info(f"Successfully inserted event with ID: {event_data['event_id']}.")
-    
-    return result
 
 
 async def get_activity_id(db: Database, activity_name: str) -> int:
