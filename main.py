@@ -489,7 +489,7 @@ async def close_event_endpoint(
     return {"message": "Event successfully closed."}
 
 
-@app.get("/filter_events")
+@app.post("/filter_events")
 async def filter_events_endpoint(
     filter_criteria: EventFilterCriteria = Body(...),
     user_id: uuid.UUID = Header(...),
