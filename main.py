@@ -784,7 +784,7 @@ async def is_participant_endpoint(
     participation_requests = Table(
         "participation_requests",
         metadata,
-        Column("event_id", UUID, primary_key=True),
+        Column("event_id", UUID, nullable=False),
         Column("event_creator", UUID),
         Column("request_participant", UUID),
         Column("accepted_status", Boolean),
@@ -854,7 +854,7 @@ async def request_to_join_event_endpoint(
     participation_requests = Table(
         "participation_requests",
         metadata,
-        Column("event_id", UUID, primary_key=True),
+        Column("event_id", UUID, nullable=False),
         Column("event_creator", UUID),
         Column("request_participant", UUID),
         Column("accepted_status", Boolean),
