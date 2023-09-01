@@ -19,8 +19,8 @@ app = FastAPI()
 # create the api object
 app = FastAPI(
     title="Clique app API",
-    description="This is the API for the LetsClique app.",
-    version="1.0.1",
+    description="This is the API for the Clique app.",
+    version="0.1",
 )
 
 # creating logger for custom logging
@@ -79,29 +79,6 @@ async def add_user(user_data: User, auth_data: dict):
     - dict: A dictionary containing:
         - 'user_id': The UUID of the newly registered user.
         - 'message': A confirmation message indicating successful registration.
-
-    Example:
-    - curl -X POST "https://letsclique.de/register_user" \
-        -H "accept: application/json" \
-        -H "Content-Type: application/json" \
-        -d '{
-            "user_data": {
-                "first_name": "John",
-                "middle_name": "A.",
-                "last_name": "Doe",
-                "username": "johndoe",
-                "email": "johndoe@example.com",
-                "birthdate": "2000-01-01",
-                "gender": "male",
-                "location": [40.7128, -74.0060],
-                "profile_photo_url": "http://example.com/johndoe.jpg",
-                "description": "Hello, I am John.",
-                "social_media_links": {"twitter": "johndoe"}
-            },
-            "auth_data": {
-                "password": "strong_password_123"
-                        }
-            }'
 
     
     Errors:
@@ -295,17 +272,6 @@ async def create_event_endpoint(
         - 'event_id': The UUID of the newly created event.
         - 'message': A confirmation message indicating successful event creation.
 
-    Example:
-    - curl -X POST "https://letsclique.de/create_event" \
-     -H "user_id: some-uuid" \
-     -H "sessiontoken: some-token" \
-     -d '{"activity_name": "some name",
-          "participant_min_age": 18,
-          "participant_max_age": 30,
-          "participant_pref_genders": ["male", "female"],
-          "description": "Join us for a fun evening of board games!"
-         }'
-
     Errors:
     - 401 Unauthorized: If the authentication fails.
     - 422 Unprocessable Entity: If the provided data doesn't meet the validation criteria.
@@ -362,18 +328,6 @@ async def update_event_endpoint(
 
     Returns:
     - dict: A dictionary containing a confirmation message.
-
-    Example:
-    - curl -X POST "https://letsclique.de/update_event" \
-     -H "user_id: some-uuid" \
-     -H "sessiontoken: some-token" \
-     -d '{"event_id": "some-uuid",
-          "activity_name": "some name",
-          "participant_min_age": 18,
-          "participant_max_age": 30,
-          "participant_pref_genders": ["male", "female"],
-          "description": "Updated description of the event."
-         }'
 
     Errors:
     - 401 Unauthorized: If the authentication fails.
@@ -451,12 +405,6 @@ async def close_event_endpoint(
 
     Returns:
     - dict: A dictionary containing a confirmation message.
-
-    Example:
-    - curl -X POST "https://letsclique.de/delete_event" \
-     -H "user_id: some-uuid" \
-     -H "sessiontoken: some-token" \
-     -d '{"event_id": "some-uuid"}'
 
     Errors:
     - 401 Unauthorized: If the authentication fails.
