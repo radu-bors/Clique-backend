@@ -77,7 +77,7 @@ services:
 networks:
   app_network:
     driver: bridge
-    name: letsclique_app_network
+    name: app_network
 
 
 # volume
