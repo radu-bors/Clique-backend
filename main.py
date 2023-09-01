@@ -1354,6 +1354,7 @@ async def did_I_match_endpoint(
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+<<<<<<< HEAD
 
 # ========================================
 # establish and close database connections
@@ -1365,3 +1366,5 @@ async def startup():
 async def shutdown():
     await app_db_database.disconnect()
     await auth_db_database.disconnect()
+=======
+>>>>>>> main
