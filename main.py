@@ -18,7 +18,7 @@ app = FastAPI()
 
 # create the api object
 app = FastAPI(
-    title="LetsClique app API",
+    title="Clique app API",
     description="This is the API for the LetsClique app.",
     version="1.0.1",
 )
