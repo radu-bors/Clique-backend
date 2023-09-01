@@ -162,10 +162,8 @@ cython_debug/
 # Project-specific ignorelist:
 data/
 documentation/
-test_notebook.ipynb
+app_db_data/
+auth_db_data/
+*.ipynb
 localhost.key
 localhost.crt
-
-
-
-

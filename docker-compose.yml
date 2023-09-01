@@ -1,0 +1,86 @@
+# version of the compose file format
+version: '3'
+
+
+# list of all containers to be used
+services:
+  ################################################################################
+  # fire up the app_db postgresDB container 
+  ################################################################################
+  app_db:
+    # download the image from Docker Hub
+    image: postgres
+    # container name
+    container_name: app_db_container
+    # set environment variables
+    environment:
+      POSTGRES_DB: app_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    # set volume for data persistence
+    volumes:
+      - app_db_data:/var/lib/postgresql/data
+    # add this service to the custom network app_network
+    networks:
+      - app_network
+  
+  ################################################################################
+  # fire up the auth_db postgresDB container 
+  ################################################################################
+  auth_db:
+    # download the image from Docker Hub
+    image: postgres
+    # container name
+    container_name: auth_db_container
+    # set environment variables
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    # set volume for data persistence
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+    # add this service to the custom network app_network
+    networks:
+      - app_network
+
+  ################################################################################
+  # fire up the FastAPI application container 
+  ################################################################################
+  api:
+    # Build the image using the local Dockerfile
+    build:
+      # Set the build context to the current directory
+      context: .
+      # Specify the Dockerfile to use for building the image
+      dockerfile: api_dockerfile
+    # Custom container name for easier reference
+    container_name: api_container
+    # Map port 8080 on the host to port 8000 inside the container
+    ports:
+      - "8080:8000"
+    # Ensure the FastAPI application starts after the databases
+    depends_on:
+      - app_db
+      - auth_db
+    # Add the FastAPI application to the custom app_network
+    networks:
+      app_network:
+        aliases:
+          - api.local
+    # Mount the project directory into the container
+    #volumes:
+    #  - ./app:/app
+
+
+# custom network
+networks:
+  app_network:
+    driver: bridge
+    name: letsclique_app_network
+
+
+# volume
+volumes:
+  app_db_data:
+  auth_db_data:
